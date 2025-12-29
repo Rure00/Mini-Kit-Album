@@ -72,6 +72,12 @@ dependencies {
     // Reflect
     implementation(kotlin("reflect"))
 
+    // coil
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
+    // Material Icon
+    implementation("androidx.compose.material:material-icons-extended")
+
     // Local Module
     implementation(project(":domain"))
 }
