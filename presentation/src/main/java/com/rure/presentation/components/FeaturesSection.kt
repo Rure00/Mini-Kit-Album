@@ -13,13 +13,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rure.presentation.ui.theme.LightGray
+import com.rure.presentation.ui.theme.White
+import com.rure.presentation.ui.theme.surface
 
 @Composable
 fun FeaturesSection() {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+            containerColor = surface.copy(alpha = 0.8f)
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -30,6 +33,7 @@ fun FeaturesSection() {
             Text(
                 text = "Why KitAlbum?",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                color = White
             )
 
             FeatureItem(
@@ -51,7 +55,7 @@ fun FeaturesSection() {
 @Composable
 private fun FeatureItem(title: String, body: String) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Text(body, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = White)
+        Text(body, color = LightGray)
     }
 }

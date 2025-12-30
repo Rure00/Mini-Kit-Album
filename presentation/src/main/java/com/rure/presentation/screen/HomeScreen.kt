@@ -1,8 +1,10 @@
 package com.rure.presentation.screen
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -17,16 +19,28 @@ import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Pin
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.rure.domain.entities.Album
 import com.rure.presentation.components.AlbumCard
 import com.rure.presentation.components.FeaturesSection
+import com.rure.presentation.components.GradientButton
+import com.rure.presentation.ui.theme.LightGray
+import com.rure.presentation.ui.theme.Typography
+import com.rure.presentation.ui.theme.White
+import com.rure.presentation.ui.theme.mainGradient
+import com.rure.presentation.ui.theme.mainGradientBrush
+import com.rure.presentation.ui.theme.surface
 
 @Composable
 fun HomeScreen(
@@ -79,57 +93,54 @@ private fun HeroSection(
         verticalArrangement = Arrangement.spacedBy(14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        GradientTitleText(text = "Your Music Collection")
+        Text(
+            text = "Your Music Collection",
+            style = TextStyle(
+                brush = mainGradientBrush,
+            ),
+            fontSize = Typography.displayMedium.fontSize,
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.Bold
+        )
 
         Text(
             text = "Register your albums, build your library, and enjoy your favorite music offline.\nFast, beautiful, and designed for music lovers.",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = LightGray,
             textAlign = TextAlign.Center,
             modifier = Modifier.widthIn(max = 720.dp)
         )
 
-        Row(
+        Column(
             modifier = Modifier.padding(top = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Button(
-                onClick = onExploreLibrary,
-                modifier = Modifier.height(48.dp),
+            GradientButton(
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                gradientBrush = mainGradientBrush,
+                onClick = onExploreLibrary
             ) {
-                Text("Explore Library")
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
-                    contentDescription = null,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
+                Row(horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(text = "Explore Library",)
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
             }
 
             OutlinedButton(
                 onClick = onRegisterAlbum,
-                modifier = Modifier.height(48.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
             ) {
-                Text("Register Album")
+                Text(
+                    text = "Register Album",
+                    color = White
+                )
             }
         }
     }
-}
-
-@Composable
-private fun GradientTitleText(text: String) {
-    val brush = Brush.horizontalGradient(
-        listOf(
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.secondary,
-            MaterialTheme.colorScheme.tertiary,
-        )
-    )
-    Text(
-        text = text,
-        // TODO: brush = brush,
-        style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
-        textAlign = TextAlign.Center
-    )
 }
 
 @Composable
@@ -142,7 +153,8 @@ private fun QuickRegisterSection(
     ) {
         Text(
             text = "Quick Register",
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            color = White
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -167,21 +179,22 @@ private fun QuickRegisterSection(
 
 @Composable
 private fun RegistrationMethodCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     title: String,
     description: String,
     cta: String,
     onClick: () -> Unit,
 ) {
-    Card(
+    val indication = LocalIndication.current
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            .background(color = surface, shape = RoundedCornerShape(16.dp))
+            .clickable(
+                onClick = onClick,
+                indication = indication,
+                interactionSource = remember { MutableInteractionSource() }
+            ),
     ) {
         Column(
             modifier = Modifier.padding(18.dp),
@@ -191,23 +204,16 @@ private fun RegistrationMethodCard(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.secondary
-                            )
-                        )
-                    ),
+                    .background(mainGradientBrush),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
             }
 
-            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text(description, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = White)
+            Text(description, color = White)
 
-            TextButton(onClick = onClick) {
+            TextButton(onClick = onClick, colors = ButtonDefaults.textButtonColors().copy(contentColor = White)) {
                 Text(cta)
                 Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null, modifier = Modifier.padding(start = 6.dp))
             }
@@ -232,33 +238,47 @@ private fun FeaturedAlbumsSection(
             Text(
                 text = "Featured Albums",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                color = White,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onViewAll) {
+            TextButton(onClick = onViewAll, colors = ButtonDefaults.textButtonColors().copy(contentColor = White)) {
                 Text("View All")
                 Icon(Icons.Outlined.ArrowForward, contentDescription = null, modifier = Modifier.padding(start = 6.dp))
             }
         }
 
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 160.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                // TODO
-                // Home 전체가 verticalScroll이라 grid 자체 스크롤 방지용 높이 고정 필요:
-                // MVP: 아이템 수가 4개이니 계산형으로 대충 height 주는 게 제일 안전.
-                .height(360.dp),
-            userScrollEnabled = false,
-        ) {
-            items(albums, key = { it.id }) { album ->
-                AlbumCard(
-                    album = album,
-                    onClick = { onAlbumClick(album.id) }
+        val albumItems = albums.take(4)
+        if (albumItems.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Register new Album!",
+                    color = LightGray,
+                    textAlign = TextAlign.Center,
+                    fontSize = Typography.bodyMedium.fontSize
                 )
             }
+
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 160.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth(),
+                userScrollEnabled = false,
+            ) {
+                items(albumItems, key = { it.id }) { album ->
+                    AlbumCard(
+                        album = album,
+                        onClick = { onAlbumClick(album.id) }
+                    )
+                }
+            }
         }
+
     }
 }
 
@@ -268,13 +288,13 @@ private fun Footer() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 28.dp)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            .background(surface.copy(alpha = 0.35f))
             .padding(vertical = 18.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = "© 2024 KitAlbum. Your music, your library.",
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = LightGray
         )
     }
 }

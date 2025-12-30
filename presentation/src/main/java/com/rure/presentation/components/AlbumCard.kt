@@ -1,13 +1,18 @@
 package com.rure.presentation.components
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,6 +24,11 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
+import com.rure.domain.entities.Album
+import com.rure.presentation.ui.theme.Black
+import com.rure.presentation.ui.theme.LightGray
+import com.rure.presentation.ui.theme.White
+import com.rure.presentation.ui.theme.surface
 
 @Composable
 fun AlbumCard(
@@ -27,14 +37,16 @@ fun AlbumCard(
     showDownloadBadge: Boolean = true,
     onClick: (Album) -> Unit,
 ) {
-    Card(
+
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick(album) },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = CardDefaults.outlinedCardBorder(enabled = true),
+            .background(color = surface, shape = RoundedCornerShape(16.dp))
+            .clickable(
+                onClick = { onClick(album) },
+                indication = LocalIndication.current,
+                interactionSource = remember { MutableInteractionSource() }
+            ),
     ) {
         Column {
             Box(
@@ -79,21 +91,21 @@ fun AlbumCard(
                 Text(
                     text = album.title,
                     style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = White,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = album.artist,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LightGray,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = album.genre,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = LightGray,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

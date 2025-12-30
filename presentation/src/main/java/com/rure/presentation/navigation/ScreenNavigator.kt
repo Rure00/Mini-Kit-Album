@@ -22,6 +22,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.rure.presentation.ui.theme.Black
 import com.rure.presentation.ui.theme.White
 
 @Composable
@@ -38,7 +39,7 @@ fun ScreenNavigator() {
             navController = navController,
             startDestination = "main/",
             modifier = Modifier
-                .background(White)
+                .background(Black)
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
