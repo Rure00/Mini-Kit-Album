@@ -320,6 +320,7 @@ private fun CodeSection(
                 capitalization = KeyboardCapitalization.Characters,
                 keyboardType = KeyboardType.Ascii
             ),
+            colors = OutlinedTextFieldDefaults.colors().copy(focusedTextColor = White, unfocusedTextColor = White)
         )
 
         Text(

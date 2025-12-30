@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.rure.presentation.screen.HomeScreen
+import com.rure.presentation.screen.LibraryScreen
 
 fun NavGraphBuilder.mainNavGraph(navController: NavController) {
     navigation(
@@ -17,12 +18,15 @@ fun NavGraphBuilder.mainNavGraph(navController: NavController) {
         composable(route = Destination.Home.route) {
             HomeScreen(
                 toAlbumScreen = {},
-                toLibraryScreen = {}
+                toLibraryScreen = { navController.navigate(Destination.Library.route) }
             )
         }
 
         composable(route = Destination.Library.route) {
-
+            LibraryScreen(
+                { listOf() },
+                {}
+            )
         }
 
         composable(
