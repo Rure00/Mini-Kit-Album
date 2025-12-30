@@ -7,17 +7,18 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
+import com.rure.presentation.screen.AlbumScreen
 import com.rure.presentation.screen.HomeScreen
 import com.rure.presentation.screen.LibraryScreen
 
 fun NavGraphBuilder.mainNavGraph(navController: NavController) {
     navigation(
         route = "main/",
-        startDestination = Destination.Home.route
+        startDestination = Destination.Album.route
     ) {
         composable(route = Destination.Home.route) {
             HomeScreen(
-                toAlbumScreen = {},
+                toAlbumScreen = { navController.navigate(Destination.Album.route + "/$it") },
                 toLibraryScreen = { navController.navigate(Destination.Library.route) }
             )
         }
@@ -30,14 +31,18 @@ fun NavGraphBuilder.mainNavGraph(navController: NavController) {
         }
 
         composable(
-            route = Destination.Album.route + "/{id}",
-            arguments = listOf(
-                navArgument("id") { type = NavType.StringType }
-            )
+            route = Destination.Album.route //+ "/{id}",
+//            arguments = listOf(
+//                navArgument("id") { type = NavType.StringType }
+//            )
         ) {
             runCatching {
-                val id = it.arguments?.getString("id") ?: throw  Exception("No Arguments For id.")
-
+                //val id = it.arguments?.getString("id") ?: throw  Exception("No Arguments For id.")
+                AlbumScreen(
+                    id = "",
+                    getAlbumById = { null },
+                    onBackToLibrary = {  }
+                )
             }.onFailure {
                 navController.navigateUp()
             }

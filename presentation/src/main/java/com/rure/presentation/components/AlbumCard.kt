@@ -57,7 +57,7 @@ fun AlbumCard(
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(album.cover)
+                        .data(album.coverUrl)
                         .crossfade(true)
                         .build(),
                     contentDescription = album.title,
@@ -75,7 +75,7 @@ fun AlbumCard(
                         )
                 )
 
-                if (showDownloadBadge && album.downloaded) {
+                if (showDownloadBadge && !album.tracks.any { !it.downloaded }) {
                     DownloadedBadge(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -119,7 +119,7 @@ private fun DownloadedBadge(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(999.dp),
-        color = MaterialTheme.colorScheme.tertiary, // accent 역할(프로젝트 테마에 맞게)
+        color = MaterialTheme.colorScheme.tertiary,
         contentColor = MaterialTheme.colorScheme.onTertiary,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp

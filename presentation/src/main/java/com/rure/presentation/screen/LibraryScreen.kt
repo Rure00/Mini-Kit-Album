@@ -55,14 +55,20 @@ fun LibraryScreen(
     }
 
     val filtered = remember(base, filterDownloaded, selectedGenres) {
-        base
-            .let { list -> if (filterDownloaded) list.filter { it.downloaded } else list }
-            .let { list ->
-                if (selectedGenres.isNotEmpty()) list.filter { it.genre in selectedGenres } else list
-            }
+        base.let { list ->
+            if (filterDownloaded) list.filter { it.tracks.any { t-> !t.downloaded } }
+            else list
+        }.let { list ->
+            if (selectedGenres.isNotEmpty()) list.filter { it.genre in selectedGenres }
+            else list
+        }
     }
 
-    val downloadedCount = remember(filtered) { filtered.count { it.downloaded } }
+    val downloadedCount = remember(filtered) {
+        filtered.count {
+            it.tracks.any { t -> t.downloaded }
+        }
+    }
 
 
 
