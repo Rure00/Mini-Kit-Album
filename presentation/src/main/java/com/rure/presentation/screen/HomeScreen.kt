@@ -19,7 +19,10 @@ import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Pin
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +38,7 @@ import com.rure.domain.entities.Album
 import com.rure.presentation.components.AlbumCard
 import com.rure.presentation.components.FeaturesSection
 import com.rure.presentation.components.GradientButton
+import com.rure.presentation.components.RegisterAlbumDialog
 import com.rure.presentation.ui.theme.LightGray
 import com.rure.presentation.ui.theme.Typography
 import com.rure.presentation.ui.theme.White
@@ -48,9 +52,16 @@ fun HomeScreen(
     toLibraryScreen: () -> Unit,
 ) {
     val featuredAlbums = listOf<Album>()
-    val onRegisterAlbum = {
+
+
+    var registerModalState by remember { mutableStateOf(false) }
+    val onOpenRegisterModal: () -> Unit = { registerModalState = true }
+    val onRegisterAlbum: (String) -> Unit = {
 
     }
+
+    // =================================================================================
+
 
     Column(
         modifier = Modifier
@@ -65,10 +76,10 @@ fun HomeScreen(
         ) {
             HeroSection(
                 onExploreLibrary = toLibraryScreen,
-                onRegisterAlbum = onRegisterAlbum,
+                onOpenRegisterModal = onOpenRegisterModal,
             )
 
-            QuickRegisterSection(onRegisterAlbum = onRegisterAlbum)
+            QuickRegisterSection(onOpenRegisterModal = onOpenRegisterModal)
 
             FeaturedAlbumsSection(
                 albums = featuredAlbums,
@@ -81,12 +92,21 @@ fun HomeScreen(
 
         Footer()
     }
+
+    RegisterAlbumDialog(
+        open = registerModalState,
+        onDismiss = { registerModalState = false },
+        onRegistered = {
+            // TODO: Register 하면 업데이트
+            registerModalState = false
+        }
+    )
 }
 
 @Composable
 private fun HeroSection(
     onExploreLibrary: () -> Unit,
-    onRegisterAlbum: () -> Unit,
+    onOpenRegisterModal: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -131,7 +151,7 @@ private fun HeroSection(
             }
 
             OutlinedButton(
-                onClick = onRegisterAlbum,
+                onClick = onOpenRegisterModal,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
             ) {
                 Text(
@@ -145,7 +165,7 @@ private fun HeroSection(
 
 @Composable
 private fun QuickRegisterSection(
-    onRegisterAlbum: () -> Unit,
+    onOpenRegisterModal: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -163,7 +183,7 @@ private fun QuickRegisterSection(
                 title = "Scan QR Code",
                 description = "Scan the QR code on your album packaging to instantly add it to your library.",
                 cta = "Scan Now",
-                onClick = onRegisterAlbum,
+                onClick = onOpenRegisterModal,
             )
 
             RegistrationMethodCard(
@@ -171,7 +191,7 @@ private fun QuickRegisterSection(
                 title = "Enter Code",
                 description = "Don't have a QR code? Simply enter your 8-digit album verification code.",
                 cta = "Enter Code",
-                onClick = onRegisterAlbum,
+                onClick = onOpenRegisterModal,
             )
         }
     }

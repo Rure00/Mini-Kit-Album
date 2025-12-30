@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import kotlin.reflect.jvm.internal.impl.types.checker.TypeRefinementSupport.Enabled
 
 @Composable
 fun GradientButton(
@@ -23,6 +24,7 @@ fun GradientButton(
     gradientBrush: Brush,
     cornerRadius: Int = 16,
     onClick: () -> Unit,
+    enabled: Boolean = true,
     content: @Composable () -> Unit
 ) {
     Button(
@@ -30,7 +32,8 @@ fun GradientButton(
         modifier = Modifier,
         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
         contentPadding = PaddingValues(0.dp),
-        shape = RoundedCornerShape(cornerRadius.dp)
+        shape = RoundedCornerShape(cornerRadius.dp),
+        enabled = enabled
     ) {
         Box(
             modifier = modifier
