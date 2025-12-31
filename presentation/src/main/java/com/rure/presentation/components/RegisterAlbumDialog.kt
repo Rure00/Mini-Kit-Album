@@ -36,16 +36,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.rure.barcode_scanner.CameraUiState
 import com.rure.barcode_scanner.createCameraController
 import com.rure.presentation.permissionState
+import com.rure.presentation.states.AlbumIntent
+import com.rure.presentation.states.UiResult
 import com.rure.presentation.ui.theme.LightGray
 import com.rure.presentation.ui.theme.White
 import com.rure.presentation.ui.theme.mainGradientBrush
 import com.rure.presentation.ui.theme.primary
 import com.rure.presentation.ui.theme.surface
+import com.rure.presentation.viewmodels.AlbumViewModel
+import kotlinx.coroutines.flow.map
 
 
 enum class RegisterMethod { QR, CODE }
@@ -53,9 +60,9 @@ enum class RegisterMethod { QR, CODE }
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun RegisterAlbumDialog(
+    albumViewModel: AlbumViewModel = hiltViewModel(),
     open: Boolean,
     onDismiss: () -> Unit,
-    onRegistered: (String) -> Unit,
 ) {
     if (!open) return
 
@@ -66,18 +73,23 @@ fun RegisterAlbumDialog(
     val cameraState by cameraController.cameraState.collectAsState()
 
     val permissionRequest = permissionState(
-        onGranted = { /* TODO */ },
-        onDenied = { /* TODO */ }
+        onGranted = { Toast.makeText(appContext, "권한 허용됨", Toast.LENGTH_SHORT).show() },
+        onDenied = { Toast.makeText(appContext, "권한 거부됨", Toast.LENGTH_SHORT).show() }
     )
 
     var method by remember { mutableStateOf<RegisterMethod?>(null) }
     var code by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
+    val isLoading by albumViewModel.uiResult.map { it is UiResult.Loading }.collectAsStateWithLifecycle(false)
 
     fun reset() {
         method = null
         code = ""
-        isLoading = false
+    }
+
+    val onRegistered = {
+        albumViewModel.emitAlbumIntent(AlbumIntent.RegisterAlbum(code))
+        onDismiss()
+        reset()
     }
 
     val onStartScan = {
@@ -93,7 +105,8 @@ fun RegisterAlbumDialog(
         } else {
             (cameraState as CameraUiState.Captured).rawBarcodes.firstOrNull()?.let {
                 Toast.makeText(appContext, "인식 성공", Toast.LENGTH_SHORT).show()
-                onRegistered(code)
+                code = it
+                onRegistered()
             } ?: Toast.makeText(appContext, "인식 실패", Toast.LENGTH_SHORT).show()
         }
     }
@@ -189,7 +202,7 @@ fun RegisterAlbumDialog(
                                 onCodeChange = { code = it },
                                 isLoading = isLoading,
                                 onCancel = { method = null },
-                                onSubmit = { onRegistered(code) }
+                                onSubmit = { onRegistered() }
                             )
                         }
 
@@ -199,18 +212,6 @@ fun RegisterAlbumDialog(
             }
         }
     }
-
-//    if (uiState is UiState.Loading) {
-//        Box(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .zIndex(999f)
-//                .background(Black.copy(alpha = 0.35f)),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            CircularProgressIndicator()
-//        }
-//    }
 }
 
 @Composable

@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Pin
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,31 +34,40 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.rure.domain.entities.Album
 import com.rure.presentation.components.AlbumCard
 import com.rure.presentation.components.FeaturesSection
 import com.rure.presentation.components.GradientButton
 import com.rure.presentation.components.RegisterAlbumDialog
+import com.rure.presentation.states.AlbumIntent
+import com.rure.presentation.states.UiResult
+import com.rure.presentation.states.UiResult.*
+import com.rure.presentation.ui.theme.Black
 import com.rure.presentation.ui.theme.LightGray
 import com.rure.presentation.ui.theme.Typography
 import com.rure.presentation.ui.theme.White
 import com.rure.presentation.ui.theme.mainGradient
 import com.rure.presentation.ui.theme.mainGradientBrush
 import com.rure.presentation.ui.theme.surface
+import com.rure.presentation.viewmodels.AlbumViewModel
 
 @Composable
 fun HomeScreen(
+    albumViewModel: AlbumViewModel = hiltViewModel(),
     toAlbumScreen: (String) -> Unit,
     toLibraryScreen: () -> Unit,
 ) {
-    val featuredAlbums = listOf<Album>()
-
+    val uiResult by albumViewModel.uiResult.collectAsStateWithLifecycle()
+    val featuredAlbums by albumViewModel.album.collectAsStateWithLifecycle()
 
     var registerModalState by remember { mutableStateOf(false) }
     val onOpenRegisterModal: () -> Unit = { registerModalState = true }
-    val onRegisterAlbum: (String) -> Unit = {
-
+    val onRegisterAlbum: (String) -> Unit = { code ->
+        albumViewModel.emitAlbumIntent(AlbumIntent.RegisterAlbum(code))
     }
 
     // =================================================================================
@@ -96,11 +106,19 @@ fun HomeScreen(
     RegisterAlbumDialog(
         open = registerModalState,
         onDismiss = { registerModalState = false },
-        onRegistered = {
-            // TODO: Register 하면 업데이트
-            registerModalState = false
-        }
     )
+
+    if (uiResult is Loading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(999f)
+                .background(Black.copy(alpha = 0.35f)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    }
 }
 
 @Composable

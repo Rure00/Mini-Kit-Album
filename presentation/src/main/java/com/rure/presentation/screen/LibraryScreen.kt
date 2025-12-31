@@ -27,21 +27,28 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rure.presentation.components.AlbumCard
+import com.rure.presentation.states.UiResult.Loading
+import com.rure.presentation.ui.theme.Black
 import com.rure.presentation.ui.theme.LightGray
 import com.rure.presentation.ui.theme.White
 import com.rure.presentation.ui.theme.mainGradient
 import com.rure.presentation.ui.theme.mainGradientBrush
 import com.rure.presentation.ui.theme.primary
 import com.rure.presentation.ui.theme.surface
+import com.rure.presentation.viewmodels.AlbumViewModel
 
 
 @Composable
 fun LibraryScreen(
+    albumViewModel: AlbumViewModel,
     searchAlbums: (String) -> List<Album>,
     onAlbumClick: (Album) -> Unit = {},
 ) {
-    val albums by remember { mutableStateOf(listOf<Album>()) }
+    val uiResult by albumViewModel.uiResult.collectAsStateWithLifecycle()
+    val albums by albumViewModel.album.collectAsStateWithLifecycle()
 
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var filterDownloaded by rememberSaveable { mutableStateOf(false) }
@@ -143,6 +150,18 @@ fun LibraryScreen(
                         .padding(top = 24.dp)
                 )
             }
+        }
+    }
+
+    if (uiResult is Loading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(999f)
+                .background(Black.copy(alpha = 0.35f)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
         }
     }
 }
