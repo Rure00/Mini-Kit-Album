@@ -8,4 +8,6 @@ plugins {
 
     alias(libs.plugins.kotlin.kapt) apply false
     alias(libs.plugins.android.hilt) apply false
+
+    alias(libs.plugins.jetbrains.kotlin.serialization) apply false
 }
