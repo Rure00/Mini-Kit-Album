@@ -23,29 +23,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rure.presentation.components.AlbumCard
 import com.rure.presentation.states.UiResult.Loading
 import com.rure.presentation.ui.theme.Black
 import com.rure.presentation.ui.theme.LightGray
 import com.rure.presentation.ui.theme.White
-import com.rure.presentation.ui.theme.mainGradient
 import com.rure.presentation.ui.theme.mainGradientBrush
 import com.rure.presentation.ui.theme.primary
-import com.rure.presentation.ui.theme.surface
 import com.rure.presentation.viewmodels.AlbumViewModel
 
 
 @Composable
 fun LibraryScreen(
-    albumViewModel: AlbumViewModel,
-    searchAlbums: (String) -> List<Album>,
-    onAlbumClick: (Album) -> Unit = {},
+    albumViewModel: AlbumViewModel = hiltViewModel(),
+    toAlbumScreen: (String) -> Unit = {},
 ) {
     val uiResult by albumViewModel.uiResult.collectAsStateWithLifecycle()
     val albums by albumViewModel.album.collectAsStateWithLifecycle()
@@ -58,7 +55,7 @@ fun LibraryScreen(
     val allGenres = remember(albums) { albums.map { it.genre }.distinct().sorted() }
 
     val base = remember(searchQuery, albums) {
-        if (searchQuery.isNotBlank()) searchAlbums(searchQuery) else albums
+        if (searchQuery.isNotBlank()) albumViewModel.searchAlbums(searchQuery) else albums
     }
 
     val filtered = remember(base, filterDownloaded, selectedGenres) {
@@ -138,7 +135,7 @@ fun LibraryScreen(
                     items(filtered, key = { it.id }) { album ->
                         AlbumCard(
                             album = album,
-                            onClick = { onAlbumClick(album) }
+                            onClick = { toAlbumScreen(album.id) }
                         )
                     }
                 }

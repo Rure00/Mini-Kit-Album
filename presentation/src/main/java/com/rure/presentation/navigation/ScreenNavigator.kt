@@ -28,8 +28,6 @@ import com.rure.presentation.ui.theme.White
 @Composable
 fun ScreenNavigator() {
     val navController = rememberNavController()
-    val backStackEntry by navController.currentBackStackEntryAsState()
-    val screen = backStackEntry?.destination.toDestination() ?: Destination.Home
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -37,7 +35,7 @@ fun ScreenNavigator() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "main/",
+            startDestination = Destination.Home,
             modifier = Modifier
                 .background(Black)
                 .fillMaxSize()
@@ -45,18 +43,5 @@ fun ScreenNavigator() {
         ) {
             mainNavGraph(navController)
         }
-    }
-}
-
-private fun NavDestination?.toDestination(): Destination? {
-    if (this == null) return null
-
-    val routes = hierarchy.mapNotNull { it.route }.toList()
-
-    return when {
-        routes.any { it.startsWith(Destination.Home.route) } -> Destination.Home
-        routes.any { it.startsWith(Destination.Library.route) } -> Destination.Library
-        routes.any { it.startsWith(Destination.Album.route) } -> Destination.Album
-        else -> null
     }
 }

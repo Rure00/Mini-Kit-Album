@@ -83,8 +83,12 @@ internal class CameraControllerImpl(private val context: Context): CameraControl
     }
 
     override fun unbind() {
-        cameraController.unbind()
-        cameraExecutor.shutdown()
-        barcodeScanner.close()
+        try {
+            cameraController.unbind()
+            cameraExecutor.shutdown()
+            barcodeScanner.close()
+        } catch (e: Exception) {
+            Log.e("CameraControllerImpl", "Error unbinding camera", e)
+        }
     }
 }

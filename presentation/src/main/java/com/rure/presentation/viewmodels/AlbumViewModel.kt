@@ -66,4 +66,10 @@ class AlbumViewModel @Inject constructor(
             _uiResult.value = UiResult.Idle
         }
     }
+
+    fun searchAlbums(query: String): List<Album> {
+        return album.value.filter {
+            it.title.contains(query) || it.artist.contains(query) || it.genre.contains(query)
+        }
+    }
 }

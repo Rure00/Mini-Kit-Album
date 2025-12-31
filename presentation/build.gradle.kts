@@ -5,6 +5,8 @@ plugins {
 
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.android.hilt)
+
+    alias(libs.plugins.jetbrains.kotlin.serialization)
 }
 
 android {
@@ -68,7 +70,9 @@ dependencies {
     kapt(libs.android.dagger.compiler)
 
     // Navigation
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
+    //implementation(libs.androidx.navigation.compose)
+    implementation(libs.kotlinx.serialization.json)
 
     // compose permission
     implementation ("com.google.accompanist:accompanist-permissions:0.36.0")
