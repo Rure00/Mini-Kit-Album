@@ -84,4 +84,5 @@ dependencies {
 
     // Local Module
     implementation(project(":domain"))
+    implementation(project(":barcode_scanner"))
 }

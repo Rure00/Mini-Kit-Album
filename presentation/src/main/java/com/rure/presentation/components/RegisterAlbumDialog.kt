@@ -1,6 +1,8 @@
 package com.rure.presentation.components
 
 
+import android.view.View
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.LocalIndication
@@ -14,10 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Pin
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material3.*
@@ -25,53 +24,90 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.rure.barcode_scanner.CameraUiState
+import com.rure.barcode_scanner.createCameraController
+import com.rure.presentation.permissionState
 import com.rure.presentation.ui.theme.LightGray
 import com.rure.presentation.ui.theme.White
 import com.rure.presentation.ui.theme.mainGradientBrush
 import com.rure.presentation.ui.theme.primary
 import com.rure.presentation.ui.theme.surface
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 
 enum class RegisterMethod { QR, CODE }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun RegisterAlbumDialog(
     open: Boolean,
     onDismiss: () -> Unit,
-    onRegistered: () -> Unit = {},
+    onRegistered: (String) -> Unit,
 ) {
     if (!open) return
 
-    val density = LocalDensity.current
-    val screenHeight = with(density) { LocalWindowInfo.current.containerSize.height.toDp() }
+    val appContext = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val cameraController = remember { createCameraController(appContext) }
+    val cameraState by cameraController.cameraState.collectAsState()
+
+    val permissionRequest = permissionState(
+        onGranted = { /* TODO */ },
+        onDenied = { /* TODO */ }
+    )
 
     var method by remember { mutableStateOf<RegisterMethod?>(null) }
     var code by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
-
-    val scope = rememberCoroutineScope()
 
     fun reset() {
         method = null
         code = ""
         isLoading = false
     }
+
+    val onStartScan = {
+        if (permissionRequest.allPermissionsGranted) {
+            cameraController.startCamera(lifecycleOwner)
+        } else {
+            permissionRequest.launchMultiplePermissionRequest()
+        }
+    }
+    val onScan = {
+        if (cameraState !is CameraUiState.Captured) {
+            Toast.makeText(appContext, "인식할 수 없습니다.", Toast.LENGTH_SHORT).show()
+        } else {
+            (cameraState as CameraUiState.Captured).rawBarcodes.firstOrNull()?.let {
+                Toast.makeText(appContext, "인식 성공", Toast.LENGTH_SHORT).show()
+                onRegistered(code)
+            } ?: Toast.makeText(appContext, "인식 실패", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+
+    // ======================================================================================
+
+
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraController.unbind()
+        }
+    }
+
 
     // ======================================================================================
 
@@ -137,19 +173,13 @@ fun RegisterAlbumDialog(
 
                     when (method) {
                         RegisterMethod.QR -> {
+                            val cameraView = if (cameraState !is CameraUiState.NotReady) cameraController.getPreviewView()
+                                            else null
                             QrSection(
+                                cameraView = cameraView,
                                 isLoading = isLoading,
-                                onScanClick = {
-                                    // TODO: 카메라 연결
-                                    scope.launch {
-                                        isLoading = true
-                                        delay(1000)
-                                        isLoading = false
-                                        onRegistered()
-                                        reset()
-                                        onDismiss()
-                                    }
-                                }
+                                onScan = onScan,
+                                onStartScan = onStartScan
                             )
                         }
 
@@ -159,16 +189,7 @@ fun RegisterAlbumDialog(
                                 onCodeChange = { code = it },
                                 isLoading = isLoading,
                                 onCancel = { method = null },
-                                onSubmit = {
-                                    scope.launch {
-                                        isLoading = true
-                                        delay(1000) // simulate
-                                        isLoading = false
-                                        onRegistered()
-                                        reset()
-                                        onDismiss()
-                                    }
-                                }
+                                onSubmit = { onRegistered(code) }
                             )
                         }
 
@@ -178,6 +199,18 @@ fun RegisterAlbumDialog(
             }
         }
     }
+
+//    if (uiState is UiState.Loading) {
+//        Box(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .zIndex(999f)
+//                .background(Black.copy(alpha = 0.35f)),
+//            contentAlignment = Alignment.Center
+//        ) {
+//            CircularProgressIndicator()
+//        }
+//    }
 }
 
 @Composable
@@ -251,39 +284,58 @@ private fun MethodCard(
 
 @Composable
 private fun QrSection(
+    cameraView: View?,
     isLoading: Boolean,
-    onScanClick: () -> Unit,
+    onStartScan: () -> Unit,
+    onScan: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("QR Code Scanner", fontWeight = FontWeight.SemiBold, color = White)
 
         val shape = RoundedCornerShape(14.dp)
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
                 .clip(shape)
                 .border(2.dp, primary.copy(alpha = 0.7f), shape)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = LocalIndication.current,
-                    onClick = { /* TODO: 스캔 시작 */ }
-                ),
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("QR", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(6.dp))
-                Text("Tap to scan QR code", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (cameraView != null) {
+                AndroidView(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .fillMaxSize(0.9f)
+                        .clipToBounds(),
+                    factory = { cameraView }
+                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = LocalIndication.current,
+                            onClick = { onStartScan() }
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text("QR", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(6.dp))
+                    Text("Tap to scan QR code", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
+
 
         GradientButton(
             modifier = Modifier.fillMaxWidth(),
             enabled = !isLoading,
             gradientBrush = mainGradientBrush,
-            onClick = onScanClick
+            onClick = onScan
         ) {
             Text(
                 text = if (isLoading) "Registering..." else "Scan Code",

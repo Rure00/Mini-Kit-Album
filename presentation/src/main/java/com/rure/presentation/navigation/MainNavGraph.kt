@@ -14,7 +14,7 @@ import com.rure.presentation.screen.LibraryScreen
 fun NavGraphBuilder.mainNavGraph(navController: NavController) {
     navigation(
         route = "main/",
-        startDestination = Destination.Album.route
+        startDestination = Destination.Home.route
     ) {
         composable(route = Destination.Home.route) {
             HomeScreen(
@@ -31,15 +31,15 @@ fun NavGraphBuilder.mainNavGraph(navController: NavController) {
         }
 
         composable(
-            route = Destination.Album.route //+ "/{id}",
-//            arguments = listOf(
-//                navArgument("id") { type = NavType.StringType }
-//            )
+            route = Destination.Album.route + "/{id}",
+            arguments = listOf(
+                navArgument("id") { type = NavType.StringType }
+            )
         ) {
             runCatching {
-                //val id = it.arguments?.getString("id") ?: throw  Exception("No Arguments For id.")
+                val id = it.arguments?.getString("id") ?: throw  Exception("No Arguments For id.")
                 AlbumScreen(
-                    id = "",
+                    id = id,
                     getAlbumById = { null },
                     onBackToLibrary = {  }
                 )
