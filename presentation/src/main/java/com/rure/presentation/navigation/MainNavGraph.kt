@@ -28,11 +28,9 @@ fun NavGraphBuilder.mainNavGraph(navController: NavController) {
 
     composable<Destination.Album> { navBackStackEntry ->
         runCatching {
-            val id = navBackStackEntry.toRoute<Destination.Album>().id
+            // val id = navBackStackEntry.toRoute<Destination.Album>().id
             AlbumScreen(
-                id = id,
-                getAlbumById = { null },
-                onBackToLibrary = {  }
+                onBackToLibrary = { navController.navigateUp() }
             )
         }.onFailure {
             navController.navigateUp()

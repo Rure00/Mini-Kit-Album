@@ -1,8 +1,6 @@
 package com.rure.presentation.screen
 
 import android.net.Uri
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,11 +26,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rure.domain.entities.Album
 import com.rure.domain.entities.Track
 import com.rure.presentation.components.GradientButton
@@ -44,39 +42,21 @@ import com.rure.presentation.ui.theme.White
 import com.rure.presentation.ui.theme.mainGradientBrush
 import com.rure.presentation.ui.theme.primary
 import com.rure.presentation.ui.theme.surface
+import com.rure.presentation.viewmodels.AlbumDetailViewModel
+import com.rure.presentation.viewmodels.AlbumViewModel
 
-// ---- Theme tokens (네 컬러 기반) ----
 private val Pink = Color(0xFFCF22C5)
 private val Purple = Color(0xFF857AD0)
-private val GradientPrimary = Brush.horizontalGradient(listOf(Pink, Purple))
 
 private enum class AlbumTab { TRACKS, MUSIC, PHOTOS, VIDEOS }
 
 @Composable
 fun AlbumScreen(
-    id: String?,
-    getAlbumById: (String) -> Album?,
+    albumDetailViewModel: AlbumDetailViewModel = hiltViewModel(),
+    albumViewModel: AlbumViewModel = hiltViewModel(),
     onBackToLibrary: () -> Unit,
 ) {
-    //val album = remember(id) { id?.let(getAlbumById) }
-    val album = Album(
-        id = "album_001",
-        title = "Neon Afterglow",
-        artist = "KiT Mini Player",
-        genre = "Synthpop",
-        releaseDate = "2024-06-14",
-        description = "A glossy synthpop record with punchy hooks, late-night ambience, and a neon-drenched vibe designed for repeat listens.",
-        coverUrl = "https://picsum.photos/600/600?random=42",
-        tracks = listOf(
-            Track(id = "t_001", title = "Midnight Run", durationSec = 212, downloaded = true, uri = ""),
-            Track(id = "t_002", title = "Glass Hearts", durationSec = 188, downloaded = false, uri = ""),
-            Track(id = "t_003", title = "Neon Afterglow", durationSec = 236, downloaded = true, uri = ""),
-            Track(id = "t_004", title = "City Lights (Interlude)", durationSec = 96, downloaded = false, uri = ""),
-            Track(id = "t_005", title = "Echoes on Tape", durationSec = 205, downloaded = false, uri = ""),
-            Track(id = "t_006", title = "Last Train Home", durationSec = 221, downloaded = true, uri = ""),
-        ),
-    )
-
+    val selectedAlbum by albumDetailViewModel.selectedAlbum.collectAsStateWithLifecycle()
 
     var currentTrack by rememberSaveable { mutableStateOf<Track?>(null) }
     var isPlaying by rememberSaveable { mutableStateOf(false) }
@@ -103,7 +83,7 @@ fun AlbumScreen(
 
     // ======================================================================================
 
-    if (album == null) {
+    if (selectedAlbum == null) {
         AlbumNotFound(
             onBackToLibrary = onBackToLibrary,
             modifier = Modifier.fillMaxSize()
@@ -111,7 +91,7 @@ fun AlbumScreen(
         return
     }
 
-    val downloadedCount = remember(album) { album.tracks.count { it.downloaded } }
+    val downloadedCount = remember(selectedAlbum) { selectedAlbum!!.tracks.count { it.downloaded } }
 
 
     LazyColumn(
@@ -122,7 +102,7 @@ fun AlbumScreen(
     ) {
         item {
             AlbumInfoSection(
-                album = album,
+                album = selectedAlbum!!,
                 downloadedCount = downloadedCount,
                 onDownloadAlbum = { /* TODO */ },
             )
@@ -139,7 +119,7 @@ fun AlbumScreen(
 
         when (activeTab) {
             AlbumTab.TRACKS -> {
-                items(album.tracks, key = { it.id }) { track ->
+                items(selectedAlbum!!.tracks, key = { it.id }) { track ->
                     TrackRow(
                         track = track,
                         onPlay = { onPlayMusic(track) },
@@ -152,13 +132,13 @@ fun AlbumScreen(
                     InfoCard(
                         icon = Icons.Outlined.MusicNote,
                         title = "Music Content",
-                        body = "All ${album.tracks.size} tracks are available for streaming and offline download."
+                        body = "All ${selectedAlbum!!.tracks.size} tracks are available for streaming and offline download."
                     )
                 }
             }
             AlbumTab.PHOTOS -> {
                 MediaGrid(
-                    contents = album.tracks.map { t -> Uri.parse(t.uri) },
+                    contents = selectedAlbum!!.tracks.map { t -> Uri.parse(t.uri) },
                     backgroundBrush = Brush.linearGradient(
                         listOf(
                             Pink.copy(alpha = 0.20f),
@@ -172,7 +152,7 @@ fun AlbumScreen(
 
             AlbumTab.VIDEOS -> {
                 MediaGrid(
-                    contents = album.tracks.map { t -> Uri.parse(t.uri) },
+                    contents = selectedAlbum!!.tracks.map { t -> Uri.parse(t.uri) },
                     backgroundBrush = Brush.linearGradient(
                         listOf(
                             Pink.copy(alpha = 0.20f),
@@ -544,7 +524,6 @@ private fun LazyListScope.MediaGrid(
 }
 
 
-// ---- Playback controls (하단 고정) ----
 @Composable
 private fun PlaybackControls(
     currentTrack: Track,
