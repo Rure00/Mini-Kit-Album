@@ -3,6 +3,10 @@ package com.rure.presentation.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rure.domain.entities.Album
+import com.rure.domain.usecases.DownloadUseCase
+import com.rure.domain.usecases.EraseUseCase
+import com.rure.domain.usecases.ObserveLocalAlbumsUseCase
+import com.rure.domain.usecases.RegisterAlbumUseCase
 import com.rure.presentation.states.AlbumIntent
 import com.rure.presentation.states.UiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +22,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AlbumViewModel @Inject constructor(
-
+    private val observeLocalAlbumsUseCase: ObserveLocalAlbumsUseCase,
+    private val registerAlbumUseCase: RegisterAlbumUseCase,
+    private val downloadUseCase: DownloadUseCase,
+    private val eraseUseCase: EraseUseCase
 ): ViewModel() {
     private val _uiResult = MutableStateFlow<UiResult>(UiResult.Idle)
     val uiResult = _uiResult.asStateFlow()
@@ -26,12 +33,9 @@ class AlbumViewModel @Inject constructor(
     private val _albums = MutableStateFlow<List<Album>>(listOf())
     val album = _albums.asStateFlow()
 
-
-
     init {
         viewModelScope.launch {
-            // TODO: usecase 연결하기
-            flow<List<Album>> {  }.collectLatest {
+            observeLocalAlbumsUseCase().collectLatest {
                 _albums.value = it
             }
         }
@@ -43,23 +47,20 @@ class AlbumViewModel @Inject constructor(
         viewModelScope.launch {
             delay(1000)
             when(intent) {
-                is AlbumIntent.ObserverMyAlbums -> {
-
+                is AlbumIntent.RegisterAlbum -> {
+                    registerAlbumUseCase(intent.code)
                 }
                 is AlbumIntent.DownloadAlbum -> {
-
+                    downloadUseCase(intent.album.id)
                 }
                 is AlbumIntent.DownloadTrack -> {
-
+                    downloadUseCase(intent.album.id, intent.track.id)
                 }
                 is AlbumIntent.EraseAlbum -> {
-
+                    eraseUseCase(intent.album)
                 }
                 is AlbumIntent.EraseTrack -> {
-
-                }
-                is AlbumIntent.RegisterAlbum -> {
-
+                    eraseUseCase(intent.track)
                 }
             }
 

@@ -10,4 +10,5 @@ interface LocalRepository {
 
     suspend fun saveTrack(albumId: String, track: Track): Result<Track>
     suspend fun eraseTrack(id: String): Boolean // TODO: 해당 ID가 없어도 true return
+    suspend fun getAlbumById(id: Any): Result<Album>
 }
