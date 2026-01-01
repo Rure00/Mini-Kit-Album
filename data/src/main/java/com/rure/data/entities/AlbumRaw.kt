@@ -1,8 +1,12 @@
 package com.rure.data.entities
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import com.rure.domain.entities.Track
 
+@Entity(tableName = "albums")
 data class AlbumRaw(
+    @PrimaryKey
     val id: String,
 
     val title: String,
