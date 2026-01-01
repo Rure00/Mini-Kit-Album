@@ -51,14 +51,13 @@ fun Track.toRaw() = TrackRaw(
     title = this.title,
     uri = this.uri,
     durationSec = this.durationSec,
-    downloaded = this.downloaded
 )
 
-fun TrackRaw.toTrack() = Track(
+fun TrackRaw.toTrack(download: Boolean) = Track(
     id = this.id,
     albumId = this.albumId,
     title = this.title,
     uri = this.uri,
     durationSec = this.durationSec,
-    downloaded = this.downloaded
+    downloaded = download
 )

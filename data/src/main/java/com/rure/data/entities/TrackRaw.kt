@@ -11,5 +11,4 @@ data class TrackRaw(
     val title: String,
     val uri: String,
     val durationSec: Int,
-    val downloaded: Boolean,
 )

@@ -27,7 +27,7 @@ class LocalRepositoryImpl @Inject constructor(
     override fun observeAlbums(): Flow<List<Album>> {
         val albumsRawFlow: Flow<List<AlbumRaw>> = localDataSource.observeAlbums()
         val trackMapFlow: Flow<Map<String, Track>> = localDataSource.observerTracks()
-            .map { tracks -> tracks.associate { it.id to it.toTrack() } }
+            .map { tracks -> tracks.associate { it.id to it.toTrack(false) } }  // TODO: 추가
             .distinctUntilChanged()
 
         return combine(albumsRawFlow, trackMapFlow) { albumRaw, trackMap ->
@@ -68,7 +68,7 @@ class LocalRepositoryImpl @Inject constructor(
         runCatching {
             val raw = localDataSource.getAlbumById(id)
             val tracks = raw?.tracksId!!.map {
-                async { localDataSource.getTrackById(it)!!.toTrack() }
+                async { localDataSource.getTrackById(it)!!.toTrack(false) }     // TODO: 추가
             }.awaitAll()
 
             raw.toAlbum(tracks)

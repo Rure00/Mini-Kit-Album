@@ -105,7 +105,7 @@ class RemoteDataSource @Inject constructor(
                     val gson = Gson()
                     val raw = gson.fromJson(obj.toString(), TrackRaw::class.java)
 
-                    trackList.add(raw.toTrack())
+                    trackList.add(raw.toTrack(isDownloaded(raw)))
 
                     found++
                 }
@@ -117,5 +117,9 @@ class RemoteDataSource @Inject constructor(
         }.onFailure {
             Log.i(DEBUGGING_TAG, "getTrack Failed: ${it.message}")
         }.getOrElse { listOf() }
+    }
+
+    private fun isDownloaded(raw: TrackRaw): Boolean {
+        return false
     }
 }
