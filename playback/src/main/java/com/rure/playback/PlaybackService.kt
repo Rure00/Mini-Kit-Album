@@ -1,4 +1,4 @@
-package com.rure.mini_kit_album
+package com.rure.playback
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -74,12 +74,6 @@ class PlaybackService : MediaSessionService() {
         player = null
 
         super.onDestroy()
-    }
-
-    fun playUrl(url: String, autoPlay: Boolean = true) {
-        player?.setMediaItem(MediaItem.fromUri(url))
-        player?.prepare()
-        player?.playWhenReady = autoPlay
     }
 
     private fun ensureChannel() {

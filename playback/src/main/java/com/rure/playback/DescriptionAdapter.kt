@@ -1,4 +1,4 @@
-package com.rure.mini_kit_album
+package com.rure.playback
 
 import android.app.PendingIntent
 import android.content.Context
