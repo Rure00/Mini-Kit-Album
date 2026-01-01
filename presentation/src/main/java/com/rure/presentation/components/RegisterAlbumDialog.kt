@@ -359,11 +359,11 @@ private fun CodeSection(
         OutlinedTextField(
             value = code,
             onValueChange = { input ->
-                val next = input.uppercase().take(8)
+                val next = input.take(5)
                 onCodeChange(next)
             },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(text = "Enter 8-digit code (e.g., ABC12345)", maxLines = 1) },
+            placeholder = { Text(text = "Enter 5-digit code (e.g., 12345)", maxLines = 1) },
             singleLine = true,
             textStyle = MaterialTheme.typography.titleMedium.copy(
                 fontFamily = FontFamily.Monospace,
@@ -405,7 +405,7 @@ private fun CodeSection(
             GradientButton(
                 modifier = Modifier.weight(1f),
                 gradientBrush = mainGradientBrush,
-                enabled = code.length >= 8 && !isLoading,
+                enabled = code.length >= 5 && !isLoading,
                 onClick = onSubmit
             ) {
                 Text(
