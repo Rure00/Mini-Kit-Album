@@ -14,6 +14,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.ViewGroupCompat.LAYOUT_MODE_CLIP_BOUNDS
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerControlView
@@ -35,6 +37,8 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.rure.playback.PlayState
+import com.rure.presentation.R
 import com.rure.presentation.components.TrackPlaySheet
 import com.rure.presentation.ui.theme.Black
 import com.rure.presentation.ui.theme.White
@@ -45,10 +49,23 @@ import com.rure.presentation.viewmodels.TrackPlayViewModel
 fun ScreenNavigator(
     trackPlayViewModel: TrackPlayViewModel = hiltViewModel()
 ) {
-    val controller by trackPlayViewModel.controllerFlow.collectAsState()
+    val controller by trackPlayViewModel.controller.collectAsState()
+    val playState by trackPlayViewModel.playState.collectAsState()
     val navController = rememberNavController()
 
-    var openControlView by remember { mutableStateOf(true) }
+    var openControlView by remember { mutableStateOf(false) }
+
+    // ====================================================================================
+
+    LaunchedEffect(playState) {
+        openControlView = when (playState) {
+            is PlayState.Playing -> true
+            is PlayState.Paused -> false
+            else -> false
+        }
+    }
+
+    // ====================================================================================
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -67,15 +84,17 @@ fun ScreenNavigator(
                 modifier = Modifier
                     .background(Black)
                     .fillMaxSize()
-                    //.padding(innerPadding)
             ) {
                 mainNavGraph(navController)
             }
 
             val boxHeight = 96
             TrackPlaySheet(
-                visible = openControlView, //controller?.isPlaying ?: false,
-                onDismiss = { openControlView = false },
+                visible = openControlView,
+                onDismiss = {
+                    trackPlayViewModel.pause()
+                    openControlView = false
+                },
                 modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter),
                 peekHeight = boxHeight
             ) {
@@ -85,14 +104,9 @@ fun ScreenNavigator(
                         .height(96.dp),
                     factory = { ctx ->
                         PlayerControlView(ctx).apply {
-                            showTimeoutMs = 0               // 항상 보이게
-                            setShowNextButton(false)
-                            setShowPreviousButton(false)
-                            setShowShuffleButton(false)
-                            showSubtitleButton = false
-                            showVrButton = false
-                            setShowFastForwardButton(true)  // 원하면 false
-                            setShowRewindButton(true)
+                            showTimeoutMs = 0
+                            setPlayer(controller)
+                            this.layoutMode = LAYOUT_MODE_CLIP_BOUNDS
                         }
                     },
                     update = { it.player = controller }

@@ -9,6 +9,7 @@ import android.util.Log
 import android.view.View
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -22,20 +23,38 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 private const val TAG = "PlaybackControllerImpl"
 
 class PlaybackControllerImpl @Inject constructor(
     @ApplicationContext private val appContext: Context,
-    private val applicationScope: CoroutineScope,
+    private val applicationScope: CoroutineScope
 ): PlaybackController {
     private val _controller = MutableStateFlow<MediaController?>(null)
-    override val controllerFlow: StateFlow<MediaController?> = _controller.asStateFlow()
-
     private var controllerFuture: ListenableFuture<MediaController>? = null
+
+
+    override var controller = _controller.asStateFlow()
+    override var playState: MutableStateFlow<PlayState> = MutableStateFlow(PlayState.Loading)
+
+
+
+    private val listener = object : Player.Listener {
+        override fun onIsPlayingChanged(isPlaying: Boolean) = refresh(controller.value)
+        override fun onPlaybackStateChanged(playbackState: Int) = refresh(controller.value)
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = refresh(controller.value)
+    }
+
+    private fun refresh(player: Player?) {
+        playState.value = when {
+            player == null -> PlayState.Loading
+            player.playbackState == Player.STATE_IDLE -> PlayState.Idle
+            player.isPlaying -> PlayState.Playing
+            else -> PlayState.Paused
+        }
+    }
+
 
     @OptIn(UnstableApi::class)
     override fun bind() {
@@ -50,11 +69,16 @@ class PlaybackControllerImpl @Inject constructor(
         future.addListener(
             {
                 runCatching { future.get() }
-                    .onSuccess { _controller.value = it }
+                    .onSuccess {
+                        _controller.value = it
+                        _controller.value?.addListener(listener)
+                    }
                     .onFailure { controllerFuture = null }
             },
             MoreExecutors.directExecutor()
         )
+
+
     }
 
     override fun unbind() {
@@ -63,6 +87,8 @@ class PlaybackControllerImpl @Inject constructor(
 
         _controller.value?.release()
         _controller.value = null
+
+        _controller.value?.removeListener(listener)
     }
 
     override fun playUrl(url: String) {
@@ -71,5 +97,12 @@ class PlaybackControllerImpl @Inject constructor(
             prepare()
             play()
         }
+    }
+
+    override fun pause() {
+        runCatching {
+            _controller.value?.pause()
+        }
+
     }
 }

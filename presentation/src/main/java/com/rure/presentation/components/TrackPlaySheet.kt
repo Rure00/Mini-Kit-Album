@@ -46,7 +46,6 @@ fun TrackPlaySheet(
     ) {
         Box(
             modifier = Modifier
-                //.offset { IntOffset(0, dragOffsetPx.roundToInt()) }
                 .fillMaxWidth()
                 .heightIn(min = peekHeightDp)
                 .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))

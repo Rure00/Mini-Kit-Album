@@ -48,6 +48,7 @@ import com.rure.presentation.ui.theme.primary
 import com.rure.presentation.ui.theme.surface
 import com.rure.presentation.viewmodels.AlbumDetailViewModel
 import com.rure.presentation.viewmodels.AlbumViewModel
+import com.rure.presentation.viewmodels.TrackPlayViewModel
 
 private val Pink = Color(0xFFCF22C5)
 private val Purple = Color(0xFF857AD0)
@@ -57,21 +58,14 @@ private enum class AlbumTab { TRACKS, MUSIC, PHOTOS, VIDEOS }
 @Composable
 fun AlbumScreen(
     albumDetailViewModel: AlbumDetailViewModel = hiltViewModel(),
-    albumViewModel: AlbumViewModel = hiltViewModel(),
+    trackPlayViewModel: TrackPlayViewModel = hiltViewModel(),
     onBackToLibrary: () -> Unit,
 ) {
     val selectedAlbum by albumDetailViewModel.selectedAlbum.collectAsStateWithLifecycle()
-
-    var currentTrack by rememberSaveable { mutableStateOf<Track?>(null) }
-    var isPlaying by rememberSaveable { mutableStateOf(false) }
-    var progress by rememberSaveable { mutableFloatStateOf(0f) } // 0..1
     var activeTab by rememberSaveable { mutableStateOf(AlbumTab.TRACKS) }
 
     val onPlayMusic: (Track) -> Unit = {
-
-    }
-    val onPlay: (Uri) -> Unit = {
-
+        trackPlayViewModel.play(it)
     }
     val onDownload: (Track) -> Unit = {
 
@@ -149,8 +143,6 @@ fun AlbumScreen(
                             Purple.copy(alpha = 0.20f)
                         )
                     ),
-                    icon = Icons.Outlined.Image,
-                    onPlay = onPlay
                 )
             }
 
@@ -163,8 +155,6 @@ fun AlbumScreen(
                             Purple.copy(alpha = 0.20f)
                         )
                     ),
-                    icon = Icons.Outlined.Videocam,
-                    onPlay = onPlay
                 )
 
             }
@@ -172,28 +162,6 @@ fun AlbumScreen(
 
 
     }
-
-//    PlaybackControls(
-//        currentTrack = currentTrack!!,
-//        isPlaying = isPlaying,
-//        progress = progress,
-//        onProgressChange = { progress = it },
-//        onPlayPause = { isPlaying = !isPlaying },
-//        onPrevious = {
-//            val idx = album.tracks.indexOfFirst { it.id == currentTrack?.id }
-//            if (idx > 0) {
-//                currentTrack = album.tracks[idx - 1]
-//                progress = 0f
-//            }
-//        },
-//        onNext = {
-//            val idx = album.tracks.indexOfFirst { it.id == currentTrack?.id }
-//            if (idx in 0 until album.tracks.lastIndex) {
-//                currentTrack = album.tracks[idx + 1]
-//                progress = 0f
-//            }
-//        }
-//    )
 }
 
 @Composable
@@ -505,8 +473,6 @@ private fun InfoCard(
 private fun LazyListScope.MediaGrid(
     contents: List<Uri>,
     backgroundBrush: Brush,
-    icon: ImageVector,
-    onPlay: (Uri) -> Unit,
 ) {
     items(contents, key = { it } ) {
         Box(
@@ -514,12 +480,7 @@ private fun LazyListScope.MediaGrid(
                 .fillMaxWidth()
                 .heightIn(min = 120.dp)
                 .clip(RoundedCornerShape(14.dp))
-                .background(backgroundBrush)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = LocalIndication.current,
-                    onClick = { onPlay(it) }
-                ),
+                .background(backgroundBrush),
             contentAlignment = Alignment.Center
         ) {
             AsyncImage(
@@ -530,65 +491,6 @@ private fun LazyListScope.MediaGrid(
                 contentDescription = "",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
-            )
-        }
-    }
-}
-
-
-@Composable
-private fun PlaybackControls(
-    currentTrack: Track,
-    isPlaying: Boolean,
-    progress: Float, // 0..1
-    onProgressChange: (Float) -> Unit,
-    onPlayPause: () -> Unit,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-) {
-    Surface(
-        tonalElevation = 4.dp,
-        shadowElevation = 12.dp,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = currentTrack.title,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "Now Playing",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                IconButton(onClick = onPrevious) {
-                    Icon(Icons.Outlined.SkipPrevious, contentDescription = "Previous")
-                }
-                IconButton(onClick = onPlayPause) {
-                    Icon(
-                        if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                        contentDescription = "Play/Pause"
-                    )
-                }
-                IconButton(onClick = onNext) {
-                    Icon(Icons.Outlined.SkipNext, contentDescription = "Next")
-                }
-            }
-
-            Slider(
-                value = progress.coerceIn(0f, 1f),
-                onValueChange = onProgressChange
             )
         }
     }
