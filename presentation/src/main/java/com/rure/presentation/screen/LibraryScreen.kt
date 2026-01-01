@@ -10,10 +10,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FilterList
@@ -80,16 +78,12 @@ fun LibraryScreen(
 
 
 
-    Column(
+    LazyColumn(
         modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .padding(vertical = 16.dp, horizontal = 16.dp)
+            //.verticalScroll(rememberScrollState())
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(vertical = 16.dp, horizontal = 16.dp)
-        ) {
+        item {
             Text(
                 text = "Your Library",
                 style = MaterialTheme.typography.headlineLarge,
@@ -122,24 +116,19 @@ fun LibraryScreen(
             )
 
             Spacer(Modifier.height(16.dp))
+        }
 
-            if (filtered.isNotEmpty()) {
-                LazyVerticalGrid(
-                    state = rememberLazyGridState(),
-                    columns = GridCells.Adaptive(minSize = 160.dp),
-                    contentPadding = PaddingValues(bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(filtered, key = { it.id }) { album ->
-                        AlbumCard(
-                            album = album,
-                            onClick = { toAlbumScreen(album.id) }
-                        )
-                    }
-                }
-            } else {
+        if (filtered.isNotEmpty()) {
+            items(items = filtered, key = { it.id }) { album ->
+                AlbumCard(
+                    album = album,
+                    onClick = { toAlbumScreen(album.id) }
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+            item { Spacer(Modifier.height(12.dp)) }
+        } else {
+            item {
                 EmptyState(
                     hasQuery = searchQuery.isNotBlank(),
                     modifier = Modifier

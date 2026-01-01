@@ -25,12 +25,16 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.rure.domain.entities.Album
 import com.rure.domain.entities.Track
 import com.rure.presentation.components.GradientButton
@@ -138,7 +142,7 @@ fun AlbumScreen(
             }
             AlbumTab.PHOTOS -> {
                 MediaGrid(
-                    contents = selectedAlbum!!.tracks.map { t -> Uri.parse(t.uri) },
+                    contents = selectedAlbum!!.images?.map { uri -> Uri.parse(uri) } ?: listOf(),
                     backgroundBrush = Brush.linearGradient(
                         listOf(
                             Pink.copy(alpha = 0.20f),
@@ -152,7 +156,7 @@ fun AlbumScreen(
 
             AlbumTab.VIDEOS -> {
                 MediaGrid(
-                    contents = selectedAlbum!!.tracks.map { t -> Uri.parse(t.uri) },
+                    contents = selectedAlbum!!.videos?.map { uri -> Uri.parse(uri) } ?: listOf(),
                     backgroundBrush = Brush.linearGradient(
                         listOf(
                             Pink.copy(alpha = 0.20f),
@@ -242,13 +246,15 @@ private fun AlbumInfoSection(
                     .background(surface),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Outlined.Image,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(42.dp)
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(album.coverUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = album.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
                 )
-                // TODO: Coil AsyncImage(model = album.coverUrl, ...)
             }
 
             Spacer(Modifier.height(12.dp))
@@ -356,7 +362,6 @@ private fun AlbumTabs(
         AlbumTab.VIDEOS to Icons.Outlined.Videocam
     )
 
-    // 웹처럼 underline 느낌: TabRow 사용
     TabRow(
         selectedTabIndex = tabs.indexOfFirst { it.first == activeTab },
         containerColor = Color.Transparent,
@@ -503,7 +508,7 @@ private fun LazyListScope.MediaGrid(
     icon: ImageVector,
     onPlay: (Uri) -> Unit,
 ) {
-    items(contents, key = null ) {   // key = { it }
+    items(contents, key = { it } ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -517,8 +522,15 @@ private fun LazyListScope.MediaGrid(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            // TODO: Coil
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(it)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 }
