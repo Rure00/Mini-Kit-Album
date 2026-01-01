@@ -37,6 +37,6 @@ class SingletonProvideModule {
 
     @Provides
     @Singleton
-    @ApplicationScope
+    //@ApplicationScope
     fun provideApplicationScope() = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 }
