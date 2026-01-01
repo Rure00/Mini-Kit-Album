@@ -28,6 +28,6 @@ interface LocalDataSource {
     @Query("SELECT * FROM tracks WHERE id = :id")
     suspend fun getTrackById(id: String): TrackRaw?
 
-    @Delete
-    suspend fun deleteTrack(id: String): Boolean
+    @Query("DELETE FROM tracks WHERE id = :id")
+    suspend fun deleteTrack(id: String): Int
 }

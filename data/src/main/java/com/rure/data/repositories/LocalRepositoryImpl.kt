@@ -60,6 +60,7 @@ class LocalRepositoryImpl @Inject constructor(
     override suspend fun eraseTrack(id: String): Boolean = withContext(ioDispatcher) {
         runCatching {
             localDataSource.deleteTrack(id)
+            true
         }.getOrElse { false }
     }
 
