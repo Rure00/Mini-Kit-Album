@@ -51,8 +51,10 @@ dependencies {
     implementation(libs.room.ktx)
     kapt(libs.room.compiler)
 
-    // Retrofit
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    // gson
+    implementation("com.google.code.gson:gson:2.10")
+
+
 
     // Hilt
     implementation(libs.android.hilt)
