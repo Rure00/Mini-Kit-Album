@@ -43,6 +43,8 @@ class RemoteDataSource @Inject constructor(
             val album = getAlbumByCode(albumCode)
             localDataSource.registerAlbum(MyAlbumInRemote(album.id, album.tracks.map { it.id }))
             true
+        }.onFailure {
+            Log.i(DEBUGGING_TAG, "registerAlbum Failed: ${it.message}")
         }.getOrElse { false }
     }
 
@@ -59,12 +61,12 @@ class RemoteDataSource @Inject constructor(
 
             val albumList = mutableListOf<Album>()
             var found = 0
+            val gson = Gson()
             for (idx in 0 until albumJsonArray.length()) {
                 val obj = albumJsonArray.getJSONObject(idx)
                 val objId = obj.getString(ID_FILED)
 
                 if (setOfId.contains(objId)) {
-                    val gson = Gson()
                     val raw = gson.fromJson(obj.toString(), AlbumRaw::class.java)
                     val tracks = getTrack(*raw.tracksId.toTypedArray())
 
@@ -77,6 +79,8 @@ class RemoteDataSource @Inject constructor(
             }
 
             albumList
+        }.onFailure {
+            Log.i(DEBUGGING_TAG, "getAlbum Failed: ${it.message}")
         }.getOrElse { listOf() }
     }
 
@@ -110,6 +114,8 @@ class RemoteDataSource @Inject constructor(
             }
 
             trackList
+        }.onFailure {
+            Log.i(DEBUGGING_TAG, "getTrack Failed: ${it.message}")
         }.getOrElse { listOf() }
     }
 }

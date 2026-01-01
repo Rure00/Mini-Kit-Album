@@ -18,11 +18,15 @@ class EraseUseCase @Inject constructor(
             album.tracks.map {
                 async { invoke(it) }
             }.awaitAll().any { !it }
+        }.onFailure {
+            println("EraseUseCase album Failed: ${it.message}")
         }.getOrElse { false }
     }
     suspend operator fun invoke(track: Track) = withContext(ioDispatcher) {
         runCatching {
             localRepository.eraseTrack(track.id)
+        }.onFailure {
+            println("EraseUseCase track Failed: ${it.message}")
         }.getOrElse { false }
     }
 }

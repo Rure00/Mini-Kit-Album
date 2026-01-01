@@ -2,6 +2,7 @@ package com.rure.data.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.google.gson.annotations.SerializedName
 import com.rure.domain.entities.Track
 
 @Entity(tableName = "albums")
@@ -17,7 +18,7 @@ data class AlbumRaw(
     val description: String,
 
     val coverUrl: String,
-    val tracksId: List<String>,
+    @SerializedName("trackIds") val tracksId: List<String>,
 
     val images: List<String>? = null,
     val videos: List<String>? = null,

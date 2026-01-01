@@ -15,6 +15,8 @@ class RegisterAlbumUseCase @Inject constructor(
         runCatching {
             val registered = remoteRepository.registerAlbum(albumCode).getOrThrow()
             localRepository.insertNewToLocalAlbums(registered).getOrThrow()
+        }.onFailure {
+            println("GetAlbumDetailUseCase Failed: ${it.message}")
         }.getOrElse { null }
     }
 }

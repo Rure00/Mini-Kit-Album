@@ -20,6 +20,8 @@ class GetAlbumDetailUseCase @Inject constructor(
             } else {
                 onLocal
             }
+        }.onFailure {
+            println("GetAlbumDetailUseCase Failed: ${it.message}")
         }.getOrElse { null }
     }
 }

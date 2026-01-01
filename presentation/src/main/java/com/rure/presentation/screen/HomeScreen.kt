@@ -6,9 +6,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -300,23 +302,19 @@ private fun FeaturedAlbumsSection(
             }
 
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 160.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+            Column(
                 modifier = Modifier
                     .fillMaxWidth(),
-                userScrollEnabled = false,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(albumItems, key = { it.id }) { album ->
+                albumItems.forEach {
                     AlbumCard(
-                        album = album,
-                        onClick = { onAlbumClick(album.id) }
+                        album = it,
+                        onClick = { onAlbumClick(it.id) }
                     )
                 }
             }
         }
-
     }
 }
 

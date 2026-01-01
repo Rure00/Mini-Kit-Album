@@ -22,6 +22,8 @@ class DownloadUseCase @Inject constructor(
             }.awaitAll()
 
             album
+        }.onFailure {
+            println("DownloadUseCase album Failed: ${it.message}")
         }.getOrElse { null }
     }
 
@@ -30,6 +32,8 @@ class DownloadUseCase @Inject constructor(
             val track = remoteRepository.getTrackById(trackId)
             localRepository.saveTrack(albumId, track.getOrNull()!!)
             track.getOrNull()
+        }.onFailure {
+            println("DownloadUseCase track Failed: ${it.message}")
         }.getOrElse { null }
     }
 }
