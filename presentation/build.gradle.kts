@@ -86,7 +86,13 @@ dependencies {
     // Material Icon
     implementation("androidx.compose.material:material-icons-extended")
 
+    // Exo Player
+    implementation("androidx.media3:media3-exoplayer:1.2.1")
+    implementation("androidx.media3:media3-session:1.2.1")
+    implementation("androidx.media3:media3-ui:1.2.1")
+
     // Local Module
     implementation(project(":domain"))
     implementation(project(":barcode_scanner"))
+    implementation(project(":playback"))
 }

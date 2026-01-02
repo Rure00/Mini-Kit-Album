@@ -66,6 +66,8 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.ui.test.junit4)
 
+
+
     // Hilt
     implementation(libs.android.hilt)
     kapt(libs.android.dagger.compiler)
@@ -79,4 +81,5 @@ dependencies {
     implementation(project(":presentation"))
     implementation(project(":domain"))
     implementation(project(":data"))
+    implementation(project(":playback"))
 }
