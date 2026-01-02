@@ -24,7 +24,7 @@ class EraseUseCase @Inject constructor(
     }
     suspend operator fun invoke(track: Track) = withContext(ioDispatcher) {
         runCatching {
-            localRepository.eraseTrack(track.id)
+            localRepository.eraseTrack(track.id, track.uri)
         }.onFailure {
             println("EraseUseCase track Failed: ${it.message}")
         }.getOrElse { false }

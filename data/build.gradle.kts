@@ -56,6 +56,8 @@ dependencies {
     // gson
     implementation("com.google.code.gson:gson:2.10")
 
+    // OkHttp
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
 
     // Hilt

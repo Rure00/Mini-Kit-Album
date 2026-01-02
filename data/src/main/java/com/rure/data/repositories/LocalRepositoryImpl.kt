@@ -16,6 +16,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -65,18 +66,25 @@ class LocalRepositoryImpl @Inject constructor(
         }
     }
 
-    // TODO: Download
     override suspend fun saveTrack(albumId: String, track: Track): Result<Track> = withContext(ioDispatcher) {
         runCatching {
-            localCacheDataSource.insertTrack(track.toRaw())
+            val downloaded = downloadDataSource.saveMp3(track.toRaw()).getOrThrow()
+
+            // Update Local Cache
+            localCacheDataSource.insertTrack(track.toRaw().copy(uri = downloaded.uri))
+
             track
         }
     }
 
-    // TODO: Download
-    override suspend fun eraseTrack(id: String): Boolean = withContext(ioDispatcher) {
+    override suspend fun eraseTrack(id: String, uri: String): Boolean = withContext(ioDispatcher) {
         runCatching {
+            downloadDataSource.removeMp3(uri)
+
+            // Update Local Cache
             localCacheDataSource.deleteTrack(id)
+
+
             true
         }.getOrElse { false }
     }
@@ -84,8 +92,12 @@ class LocalRepositoryImpl @Inject constructor(
     override suspend fun getAlbumById(id: String): Result<Album> = withContext(ioDispatcher) {
         runCatching {
             val raw = localCacheDataSource.getAlbumById(id)
+            val downloaded = downloadDataSource.observerTracks().map { tracks ->
+                tracks.associateBy { it.id }
+            }.first()
+
             val tracks = raw?.tracksId!!.map {
-                async { localCacheDataSource.getTrackById(it)!!.toTrack(false) }     // TODO: 추가
+                async { localCacheDataSource.getTrackById(it)!!.toTrack(downloaded.containsKey(it)) }     // TODO: 로컬에 Track이 없다면 ?? 리팩토링 하기...
             }.awaitAll()
 
             raw.toAlbum(tracks)
