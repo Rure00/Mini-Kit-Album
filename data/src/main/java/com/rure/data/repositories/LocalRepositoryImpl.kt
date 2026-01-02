@@ -1,8 +1,9 @@
 package com.rure.data.repositories
 
-import com.rure.data.data_sources.LocalDataSource
+import com.rure.data.data_sources.LocalCacheDataSource
+import com.rure.data.data_sources.DownloadDataSource
 import com.rure.data.entities.AlbumRaw
-import com.rure.data.entities.TrackRaw
+import com.rure.data.entities.DownloadedTrack
 import com.rure.data.toAlbum
 import com.rure.data.toRaw
 import com.rure.data.toTrack
@@ -21,54 +22,70 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class LocalRepositoryImpl @Inject constructor(
-    private val localDataSource: LocalDataSource,
+    private val localCacheDataSource: LocalCacheDataSource,
+    private val downloadDataSource: DownloadDataSource,
     private val ioDispatcher: CoroutineDispatcher
 ): LocalRepository {
     override fun observeAlbums(): Flow<List<Album>> {
-        val albumsRawFlow: Flow<List<AlbumRaw>> = localDataSource.observeAlbums()
-        val trackMapFlow: Flow<Map<String, Track>> = localDataSource.observerTracks()
-            .map { tracks -> tracks.associate { it.id to it.toTrack(false) } }  // TODO: 추가
-            .distinctUntilChanged()
+        val downloadedTrackFlow = downloadDataSource.observerTracks().map { list ->
+            list.associateBy { it.id }
+        }
+        val trackMapFlow = combine(downloadedTrackFlow,localCacheDataSource.observerTracks() ) { down, raw ->
+            raw.associate {
+                it.id to it.toTrack(down.containsKey(it.id))
+            }
+        }
+        val albumRawFlow = localCacheDataSource.observeAlbums()
 
-        return combine(albumsRawFlow, trackMapFlow) { albumRaw, trackMap ->
+        return combine(albumRawFlow, trackMapFlow) { albumRaw, trackMap ->
+            val tracks = albumRaw.map { trackMap[it.id]!! }     // TODO: 로컬에 Track이 없다면 ?? 리팩토링 하기...
             albumRaw.map { raw ->
-                raw.toAlbum(
-                    tracks = raw.tracksId.mapNotNull { trackMap[it] }
-                )
+                raw.toAlbum(tracks = tracks)
             }
         }.flowOn(ioDispatcher)
+    }
+
+    override fun observeDownloadedTrack(): Flow<List<Track>> {
+        val downloadedTrackFlow = downloadDataSource.observerTracks().map { list ->
+            list.associateBy { it.id }
+        }
+        return combine(downloadedTrackFlow,localCacheDataSource.observerTracks() ) { down, raw ->
+            raw.map { it.toTrack(down.containsKey(it.id)) }
+        }
     }
 
 
     override suspend fun insertNewToLocalAlbums(album: Album): Result<Album> = withContext(ioDispatcher) {
         runCatching {
-            localDataSource.insertAlbum(album.toRaw())
+            localCacheDataSource.insertAlbum(album.toRaw())
             album.tracks.map {
-                async { localDataSource.insertTrack(it.toRaw()) }
+                async { localCacheDataSource.insertTrack(it.toRaw()) }
             }.awaitAll()
             album
         }
     }
 
+    // TODO: Download
     override suspend fun saveTrack(albumId: String, track: Track): Result<Track> = withContext(ioDispatcher) {
         runCatching {
-            localDataSource.insertTrack(track.toRaw())
+            localCacheDataSource.insertTrack(track.toRaw())
             track
         }
     }
 
+    // TODO: Download
     override suspend fun eraseTrack(id: String): Boolean = withContext(ioDispatcher) {
         runCatching {
-            localDataSource.deleteTrack(id)
+            localCacheDataSource.deleteTrack(id)
             true
         }.getOrElse { false }
     }
 
     override suspend fun getAlbumById(id: String): Result<Album> = withContext(ioDispatcher) {
         runCatching {
-            val raw = localDataSource.getAlbumById(id)
+            val raw = localCacheDataSource.getAlbumById(id)
             val tracks = raw?.tracksId!!.map {
-                async { localDataSource.getTrackById(it)!!.toTrack(false) }     // TODO: 추가
+                async { localCacheDataSource.getTrackById(it)!!.toTrack(false) }     // TODO: 추가
             }.awaitAll()
 
             raw.toAlbum(tracks)

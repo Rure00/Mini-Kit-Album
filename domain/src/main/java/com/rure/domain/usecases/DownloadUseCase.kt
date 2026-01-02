@@ -8,7 +8,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-
 class DownloadUseCase @Inject constructor(
     private val remoteRepository: RemoteRepository,
     private val localRepository: LocalRepository,
@@ -29,9 +28,9 @@ class DownloadUseCase @Inject constructor(
 
     suspend operator fun invoke(albumId: String, trackId: String) = withContext(ioDispatcher) {
         runCatching {
-            val track = remoteRepository.getTrackById(trackId)
-            localRepository.saveTrack(albumId, track.getOrNull()!!)
-            track.getOrNull()
+            remoteRepository.getTrackById(trackId).getOrNull()?.also {
+                localRepository.saveTrack(albumId, it)
+            }
         }.onFailure {
             println("DownloadUseCase track Failed: ${it.message}")
         }.getOrElse { null }

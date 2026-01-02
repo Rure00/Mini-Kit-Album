@@ -3,8 +3,10 @@ package com.rure.presentation.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rure.domain.entities.Album
+import com.rure.domain.entities.Track
 import com.rure.domain.usecases.DownloadUseCase
 import com.rure.domain.usecases.EraseUseCase
+import com.rure.domain.usecases.ObserveDownloadedTrackUseCase
 import com.rure.domain.usecases.ObserveLocalAlbumsUseCase
 import com.rure.domain.usecases.RegisterAlbumUseCase
 import com.rure.presentation.states.AlbumIntent
@@ -23,6 +25,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AlbumViewModel @Inject constructor(
     private val observeLocalAlbumsUseCase: ObserveLocalAlbumsUseCase,
+    private val observeDownloadedTrackUseCase: ObserveDownloadedTrackUseCase,
+
     private val registerAlbumUseCase: RegisterAlbumUseCase,
     private val downloadUseCase: DownloadUseCase,
     private val eraseUseCase: EraseUseCase
@@ -33,10 +37,17 @@ class AlbumViewModel @Inject constructor(
     private val _albums = MutableStateFlow<List<Album>>(listOf())
     val album = _albums.asStateFlow()
 
+    private val _downloadTracks = MutableStateFlow<List<Track>>(listOf())
+    val downloadTracks = _downloadTracks.asStateFlow()
+
     init {
         viewModelScope.launch {
             observeLocalAlbumsUseCase().collectLatest {
                 _albums.value = it
+            }
+
+            observeDownloadedTrackUseCase().collectLatest {
+                _downloadTracks.value = it
             }
         }
     }

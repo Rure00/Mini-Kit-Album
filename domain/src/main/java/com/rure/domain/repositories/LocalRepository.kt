@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface LocalRepository {
     fun observeAlbums(): Flow<List<Album>>
+    fun observeDownloadedTrack(): Flow<List<Track>>
     suspend fun insertNewToLocalAlbums(album: Album): Result<Album>
 
     suspend fun saveTrack(albumId: String, track: Track): Result<Track>

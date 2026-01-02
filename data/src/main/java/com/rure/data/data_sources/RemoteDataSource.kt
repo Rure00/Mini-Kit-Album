@@ -12,7 +12,6 @@ import com.rure.domain.entities.Album
 import com.rure.domain.entities.Track
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import javax.inject.Inject
@@ -27,7 +26,7 @@ private const val DEBUGGING_TAG = "RemoteDataSource"
 
 class RemoteDataSource @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val localDataSource: LocalDataSource,   // To manage registered albums
+    private val localCacheDataSource: LocalCacheDataSource,   // To manage registered albums
     private val ioDispatcher: CoroutineDispatcher
 ) {
     suspend fun getAlbumByCode(albumCode: String): Album = withContext(ioDispatcher) {
@@ -41,7 +40,7 @@ class RemoteDataSource @Inject constructor(
     suspend fun registerAlbum(albumCode: String): Boolean = withContext(ioDispatcher) {
         runCatching {
             val album = getAlbumByCode(albumCode)
-            localDataSource.registerAlbum(MyAlbumInRemote(album.id, album.tracks.map { it.id }))
+            localCacheDataSource.registerAlbum(MyAlbumInRemote(album.id, album.tracks.map { it.id }))
             true
         }.onFailure {
             Log.i(DEBUGGING_TAG, "registerAlbum Failed: ${it.message}")

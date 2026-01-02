@@ -1,7 +1,6 @@
 package com.rure.data.data_sources
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import com.rure.data.entities.AlbumRaw
@@ -10,7 +9,7 @@ import com.rure.data.entities.TrackRaw
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface LocalDataSource {
+interface LocalCacheDataSource {
     @Query("SELECT * FROM albums")
     fun observeAlbums(): Flow<List<AlbumRaw>>
     @Query("SELECT * FROM tracks")
