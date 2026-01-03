@@ -1,5 +1,6 @@
 package com.rure.presentation.viewmodels
 
+import android.util.Log
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -11,6 +12,7 @@ import com.rure.presentation.navigation.Destination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -26,7 +28,9 @@ class AlbumDetailViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            _selectedAlbum.value = getAlbumDetailUseCase(id)
+            getAlbumDetailUseCase(id).collectLatest { flow ->
+                _selectedAlbum.value = flow.find { it.id == id }
+            }
         }
     }
 }
