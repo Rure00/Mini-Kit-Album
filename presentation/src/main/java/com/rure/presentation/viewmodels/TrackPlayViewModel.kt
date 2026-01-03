@@ -1,9 +1,10 @@
 package com.rure.presentation.viewmodels
 
+import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rure.domain.entities.Track
-import com.rure.domain.usecases.ObserveDownloadedTrackUseCase
 import com.rure.playback.PlaybackController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,27 +16,25 @@ import javax.inject.Inject
 @HiltViewModel
 class TrackPlayViewModel @Inject constructor(
     private val playbackController: PlaybackController,
-    private val observeDownloadedTrackUseCase: ObserveDownloadedTrackUseCase
 ): ViewModel() {
     val controller = playbackController.controller
     val playState = playbackController.playState
 
-    private val _downloadTracks = MutableStateFlow<List<Track>>(listOf())
-    val downloadTracks = _downloadTracks.asStateFlow()
-
     init {
         viewModelScope.launch {
-            observeDownloadedTrackUseCase().collectLatest {
-                _downloadTracks.value = it
-            }
+            playbackController.bind()
         }
     }
 
-    fun play(track: Track) {
+    fun play(track: Track, onFail: () -> Unit) {
         viewModelScope.launch {
-            _downloadTracks.value.find { it.id == track.id }?.let {
-                playbackController.playUrl(it.uri)
-            } ?: playbackController.playUrl(track.uri)
+            Log.d("TrackPlayViewModel", "play: ${track.toString()}")
+
+            runCatching {
+                playbackController.playUrl(track.uri)
+            }.onFailure {
+                onFail()
+            }
         }
     }
 
