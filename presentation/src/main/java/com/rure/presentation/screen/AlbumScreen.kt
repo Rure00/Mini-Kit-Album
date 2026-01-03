@@ -260,13 +260,26 @@ private fun AlbumInfoSection(
 
             Spacer(Modifier.height(12.dp))
 
-            GradientButton(
-                modifier = Modifier.fillMaxWidth(),
-                gradientBrush = mainGradientBrush,
-                onClick = onDownloadAlbum
-            ) {
-                Text(text = "Download Album", color = White, style = MaterialTheme.typography.titleMedium)
+            // 다운 다 됐으면!
+            if (album.tracks.filter { it.downloaded }.size == album.tracks.size) {
+                GradientButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    gradientBrush = mainGradientBrush,
+                    onClick = {  },
+                    enabled = false
+                ) {
+                    Text(text = "Downloaded", color = White, style = MaterialTheme.typography.titleMedium)
+                }
+            } else {
+                GradientButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    gradientBrush = mainGradientBrush,
+                    onClick = onDownloadAlbum
+                ) {
+                    Text(text = "Download Album", color = White, style = MaterialTheme.typography.titleMedium)
+                }
             }
+
 
             Spacer(Modifier.height(18.dp))
 

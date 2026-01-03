@@ -28,6 +28,7 @@ import com.rure.domain.entities.Album
 import com.rure.presentation.ui.theme.Black
 import com.rure.presentation.ui.theme.LightGray
 import com.rure.presentation.ui.theme.White
+import com.rure.presentation.ui.theme.secondary
 import com.rure.presentation.ui.theme.surface
 
 @Composable
@@ -119,8 +120,8 @@ private fun DownloadedBadge(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(999.dp),
-        color = MaterialTheme.colorScheme.tertiary,
-        contentColor = MaterialTheme.colorScheme.onTertiary,
+        color = secondary,
+        contentColor = White,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {

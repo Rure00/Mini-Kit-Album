@@ -1,5 +1,6 @@
 package com.rure.data.repositories
 
+import android.util.Log
 import com.rure.data.data_sources.LocalCacheDataSource
 import com.rure.data.data_sources.DownloadDataSource
 import com.rure.data.entities.AlbumRaw
@@ -11,50 +12,60 @@ import com.rure.domain.entities.Album
 import com.rure.domain.entities.Track
 import com.rure.domain.repositories.LocalRepository
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+
+private const val TAG = "LocalRepositoryImpl"
 
 class LocalRepositoryImpl @Inject constructor(
     private val localCacheDataSource: LocalCacheDataSource,
     private val downloadDataSource: DownloadDataSource,
-    private val ioDispatcher: CoroutineDispatcher
+    private val ioDispatcher: CoroutineDispatcher,
+    private val applicationScope: CoroutineScope,
 ): LocalRepository {
-    override fun observeAlbums(): Flow<List<Album>> {
-        val downloadedTrackFlow = downloadDataSource.observerTracks().map { list ->
-            list.associateBy { it.id }
-        }
-        val trackMapFlow = combine(downloadedTrackFlow,localCacheDataSource.observerTracks() ) { down, raw ->
-            raw.associate {
-                it.id to it.toTrack(down.containsKey(it.id))
-            }
-        }
-        val albumRawFlow = localCacheDataSource.observeAlbums()
 
-        return combine(albumRawFlow, trackMapFlow) { albumRaw, trackMap ->
-            val tracks = albumRaw.map { trackMap[it.id]!! }     // TODO: 로컬에 Track이 없다면 ?? 리팩토링 하기...
-            albumRaw.map { raw ->
-                raw.toAlbum(tracks = tracks)
-            }
-        }.flowOn(ioDispatcher)
+    init {
+        Log.d("UpdateErrorFind", "LocalRepositoryImpl Init")
     }
 
-    override fun observeDownloadedTrack(): Flow<List<Track>> {
-        val downloadedTrackFlow = downloadDataSource.observerTracks().map { list ->
-            list.associateBy { it.id }
-        }
-        return combine(downloadedTrackFlow,localCacheDataSource.observerTracks() ) { down, raw ->
-            raw.map { it.toTrack(down.containsKey(it.id)) }
-        }
-    }
+    private val downloadedTrackFlow = downloadDataSource.observerTracks().map { list ->
+        list.associateBy { it.id }
+    }.stateIn(applicationScope, WhileSubscribed(5000), emptyMap())
 
+    private val cachedTrackRawFlow = combine(downloadedTrackFlow,localCacheDataSource.observerTracks() ) { down, raw ->
+        Log.d(TAG, "observeAlbums: ${down.toList().joinToString { it.first }}")
+        raw.associate {
+            it.id to it.toTrack(down.containsKey(it.id))
+        }.also {
+            Log.d(TAG, "observeAlbums: ${it.toList().joinToString { "${it.second.title}: ${it.second.downloaded}" }}")
+        }
+    }.stateIn(applicationScope, WhileSubscribed(5000), emptyMap())
+
+    private val cachedAlbumRawFlow = combine(localCacheDataSource.observeAlbums(), cachedTrackRawFlow) { albumRaws, trackMap ->
+        albumRaws.map { raw ->
+            val tracksForAlbum = raw.tracksId.mapNotNull { trackMap[it] }
+            raw.toAlbum(tracks = tracksForAlbum)
+        }
+    }.stateIn(applicationScope, WhileSubscribed(5000), emptyList())
+
+
+    override fun observeAlbums(): StateFlow<List<Album>> = cachedAlbumRawFlow
 
     override suspend fun insertNewToLocalAlbums(album: Album): Result<Album> = withContext(ioDispatcher) {
         runCatching {
@@ -79,10 +90,10 @@ class LocalRepositoryImpl @Inject constructor(
 
     override suspend fun eraseTrack(id: String, uri: String): Boolean = withContext(ioDispatcher) {
         runCatching {
-            downloadDataSource.removeMp3(uri)
+            //downloadDataSource.removeMp3(uri)
 
             // Update Local Cache
-            localCacheDataSource.deleteTrack(id)
+            //localCacheDataSource.deleteTrack(id)
 
 
             true
@@ -96,8 +107,9 @@ class LocalRepositoryImpl @Inject constructor(
                 tracks.associateBy { it.id }
             }.first()
 
+            // TODO: 로컬에 Track이 없다면 ?? 리팩토링 하기...
             val tracks = raw?.tracksId!!.map {
-                async { localCacheDataSource.getTrackById(it)!!.toTrack(downloaded.containsKey(it)) }     // TODO: 로컬에 Track이 없다면 ?? 리팩토링 하기...
+                async { localCacheDataSource.getTrackById(it)!!.toTrack(downloaded.containsKey(it)) }
             }.awaitAll()
 
             raw.toAlbum(tracks)

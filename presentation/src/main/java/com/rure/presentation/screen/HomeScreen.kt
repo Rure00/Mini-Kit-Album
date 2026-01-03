@@ -283,7 +283,7 @@ private fun FeaturedAlbumsSection(
             )
             TextButton(onClick = onViewAll, colors = ButtonDefaults.textButtonColors().copy(contentColor = White)) {
                 Text("View All")
-                Icon(Icons.Outlined.ArrowForward, contentDescription = null, modifier = Modifier.padding(start = 6.dp))
+                Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null, modifier = Modifier.padding(start = 6.dp))
             }
         }
 

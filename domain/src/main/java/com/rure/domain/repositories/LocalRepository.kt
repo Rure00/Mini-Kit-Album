@@ -3,10 +3,10 @@ package com.rure.domain.repositories
 import com.rure.domain.entities.Album
 import com.rure.domain.entities.Track
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 interface LocalRepository {
-    fun observeAlbums(): Flow<List<Album>>
-    fun observeDownloadedTrack(): Flow<List<Track>>
+    fun observeAlbums(): StateFlow<List<Album>>
     suspend fun insertNewToLocalAlbums(album: Album): Result<Album>
 
     suspend fun saveTrack(albumId: String, track: Track): Result<Track>
