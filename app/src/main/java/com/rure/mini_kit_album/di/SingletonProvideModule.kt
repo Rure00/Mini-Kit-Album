@@ -29,7 +29,7 @@ class SingletonProvideModule {
 
     @Provides
     @Singleton
-    fun provideLocalDataSource(roomDataBase: MainRoomDataBase) = roomDataBase.localDataSource
+    fun provideLocalDataSource(roomDataBase: MainRoomDataBase) = roomDataBase.localCacheDataSource
 
     @Provides
     @Singleton

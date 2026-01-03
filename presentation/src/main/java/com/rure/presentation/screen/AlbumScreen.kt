@@ -1,6 +1,7 @@
 package com.rure.presentation.screen
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,6 +33,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -41,6 +44,9 @@ import com.rure.presentation.components.GradientButton
 import com.rure.presentation.formatDate
 import com.rure.presentation.formatDuration
 import com.rure.presentation.parseYear
+import com.rure.presentation.states.AlbumIntent
+import com.rure.presentation.states.UiResult.Loading
+import com.rure.presentation.ui.theme.Black
 import com.rure.presentation.ui.theme.LightGray
 import com.rure.presentation.ui.theme.White
 import com.rure.presentation.ui.theme.mainGradientBrush
@@ -58,16 +64,31 @@ private enum class AlbumTab { TRACKS, MUSIC, PHOTOS, VIDEOS }
 @Composable
 fun AlbumScreen(
     albumDetailViewModel: AlbumDetailViewModel = hiltViewModel(),
+    albumViewModel: AlbumViewModel = hiltViewModel(),
     trackPlayViewModel: TrackPlayViewModel = hiltViewModel(),
     onBackToLibrary: () -> Unit,
 ) {
+    val context = LocalContext.current
+
+    val uiResult by albumViewModel.uiResult.collectAsStateWithLifecycle()
+
     val selectedAlbum by albumDetailViewModel.selectedAlbum.collectAsStateWithLifecycle()
     var activeTab by rememberSaveable { mutableStateOf(AlbumTab.TRACKS) }
 
     val onPlayMusic: (Track) -> Unit = {
-        trackPlayViewModel.play(it)
+        trackPlayViewModel.play(it) {
+            Toast.makeText(context, "네트워크 연결 필요", Toast.LENGTH_SHORT).show()
+        }
     }
-    val onDownload: (Track) -> Unit = {
+    val onDownloadAlbum: () -> Unit = {
+        selectedAlbum?.let {
+            albumViewModel.emitAlbumIntent(AlbumIntent.DownloadAlbum(it))
+        }
+    }
+    val onDownloadTrack: (Track) -> Unit = { track ->
+        selectedAlbum?.let {
+            albumViewModel.emitAlbumIntent(AlbumIntent.DownloadTrack(it, track))
+        }
 
     }
 
@@ -102,7 +123,7 @@ fun AlbumScreen(
             AlbumInfoSection(
                 album = selectedAlbum!!,
                 downloadedCount = downloadedCount,
-                onDownloadAlbum = { /* TODO */ },
+                onDownloadAlbum = { onDownloadAlbum() },
             )
 
             Spacer(Modifier.height(16.dp))
@@ -121,7 +142,7 @@ fun AlbumScreen(
                     TrackRow(
                         track = track,
                         onPlay = { onPlayMusic(track) },
-                        onDownload = { onDownload(track) }
+                        onDownload = { onDownloadTrack(track) }
                     )
                 }
             }
@@ -162,6 +183,18 @@ fun AlbumScreen(
 
 
     }
+
+    if (uiResult is Loading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(999f)
+                .background(Black.copy(alpha = 0.35f)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    }
 }
 
 @Composable
@@ -176,7 +209,7 @@ private fun AlbumNotFound(
     ) {
         Spacer(Modifier.height(16.dp))
         Button(onClick = onBackToLibrary) {
-            Icon(Icons.Outlined.ArrowBack, contentDescription = null)
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
             Spacer(Modifier.width(8.dp))
             Text("Back to Library")
         }
@@ -227,13 +260,26 @@ private fun AlbumInfoSection(
 
             Spacer(Modifier.height(12.dp))
 
-            GradientButton(
-                modifier = Modifier.fillMaxWidth(),
-                gradientBrush = mainGradientBrush,
-                onClick = onDownloadAlbum
-            ) {
-                Text(text = "Download Album", color = White, style = MaterialTheme.typography.titleMedium)
+            // 다운 다 됐으면!
+            if (album.tracks.filter { it.downloaded }.size == album.tracks.size) {
+                GradientButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    gradientBrush = mainGradientBrush,
+                    onClick = {  },
+                    enabled = false
+                ) {
+                    Text(text = "Downloaded", color = White, style = MaterialTheme.typography.titleMedium)
+                }
+            } else {
+                GradientButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    gradientBrush = mainGradientBrush,
+                    onClick = onDownloadAlbum
+                ) {
+                    Text(text = "Download Album", color = White, style = MaterialTheme.typography.titleMedium)
+                }
             }
+
 
             Spacer(Modifier.height(18.dp))
 

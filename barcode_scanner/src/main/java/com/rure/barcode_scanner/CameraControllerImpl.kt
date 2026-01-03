@@ -83,6 +83,8 @@ internal class CameraControllerImpl(private val context: Context): CameraControl
     }
 
     override fun unbind() {
+        if (cameraState.value is CameraUiState.NotReady) return
+
         try {
             cameraController.unbind()
             cameraExecutor.shutdown()

@@ -92,10 +92,14 @@ class PlaybackControllerImpl @Inject constructor(
     }
 
     override fun playUrl(url: String) {
-        _controller.value?.apply {
-            setMediaItem(MediaItem.fromUri(url))
-            prepare()
-            play()
+        runCatching {
+            _controller.value!!.run {
+                setMediaItem(MediaItem.fromUri(url))
+                prepare()
+                play()
+            }
+        }.onFailure {
+            Log.i(TAG, "playUrl Failed: ${it.message}")
         }
     }
 

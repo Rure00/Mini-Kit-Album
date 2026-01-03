@@ -1,36 +1,41 @@
 package com.rure.presentation.viewmodels
 
-import androidx.compose.runtime.collectAsState
+import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rure.domain.entities.Track
-import com.rure.domain.usecases.SelectTrackUrlUseCase
 import com.rure.playback.PlaybackController
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class TrackPlayViewModel @Inject constructor(
     private val playbackController: PlaybackController,
-    private val selectTrackUrlUseCase: SelectTrackUrlUseCase
 ): ViewModel() {
     val controller = playbackController.controller
     val playState = playbackController.playState
 
     init {
-        playbackController.bind()
+        viewModelScope.launch {
+            playbackController.bind()
+        }
     }
 
-    fun play(track: Track) {
+    fun play(track: Track, onFail: () -> Unit) {
         viewModelScope.launch {
-            playbackController.playUrl(track.uri)
-//            selectTrackUrlUseCase(track)?.let {
-//                playbackController.playUrl(it.uri)
-//            }
-        }
+            Log.d("TrackPlayViewModel", "play: ${track.toString()}")
 
+            runCatching {
+                playbackController.playUrl(track.uri)
+            }.onFailure {
+                onFail()
+            }
+        }
     }
 
     fun pause() {
