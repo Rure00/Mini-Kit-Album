@@ -21,14 +21,16 @@
 
 ## Architecture
 
-<img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/fda077f8-7ca5-49af-aaf0-c68b9659ccb0" />
+<img width="326" height="241" alt="architecture" src="https://github.com/user-attachments/assets/f95f99eb-5e33-40f7-bff4-c3b0b3baa66b" />
+
 
 
 ------
 
 ## Screens
 
-<img width="682" height="1024" alt="image" src="https://github.com/user-attachments/assets/7482334a-8329-4c45-8620-cd5cfbe1ae2a" />
+<img width="750" height="750" alt="wire_frame" src="https://github.com/user-attachments/assets/5a5d8ec1-554c-46c3-94e3-fd5b8a3d3f50" />
+
 
 
 #### 1) HomeScreen
@@ -70,16 +72,26 @@ https://github.com/user-attachments/assets/94abfed0-1796-4ef8-a13a-9e4afd3cb3da
  - 스캔 성공 → 등록 완료 Toast 확인
 
 
+#### Video 2) Featured Albums → View All → Filter/Search
 
-###  Flow2
+https://github.com/user-attachments/assets/3ebe3745-f2a3-4155-827b-240c6bcb7e39
 
-![two](https://github.com/user-attachments/assets/1f83cc61-3b45-4e17-a9ad-89a6350934b4)
+1. 홈에서 아래로 내려 Featured Albums 노출 (3개 정도 미리 등록)
+2. View All 클릭 → Library 화면 진입
+3. 필터 기능 사용
+4. 검색 기능 사용
 
 
-1. 여러 바코드를 한 번에 인식
-2. 전송 성공 시 SENT
-3. 실패 시 FAILED로 상태 반영 및 3회 재시도
-4. Job Detail에서 클립보드에 Id 복사
+
+#### Video 3) Album Detail → Streaming → Offline Playback
+
+https://github.com/user-attachments/assets/145edcee-b2fc-4b9f-877f-3cb39a4d1c06
+
+1. Library에서 다운로드 안 된 앨범 진입
+2. 탭(Track/Music/Photos/Videos) 구성 확인
+3. Track에서 스트리밍 재생 후 정지
+4. 다운로드된 앨범으로 이동 → 데이터 끄기
+5. 저장된 음원 오프라인 재생
 
 
 ------
@@ -87,20 +99,30 @@ https://github.com/user-attachments/assets/94abfed0-1796-4ef8-a13a-9e4afd3cb3da
 ## Data Model
 
 ```kotlin
-data class Job(
+data class Album(
     val id: String,
-    val barcode: String,
-    val time: LocalDateTime,
-    val status: JobStatus,
-    val errorText: String? = null,
-    val retryCount: Int = 0
+    val title: String,
+    val artist: String,
+    val genre: String,
+    val releaseDate: String,
+    val description: String,
+    val coverUrl: String,
+    val tracks: List<Track>,
+    val images: List<String>? = null,
+    val videos: List<String>? = null,
+)
+
+data class Track(
+    val id: String,
+    val albumId: String,
+    val title: String,
+    val uri: String,
+    val durationSec: Int,
+    val downloaded: Boolean,
 )
 ```
 
-Status
-- PENDING: 로컬 저장 완료, 전송 대기
-- SENT: 전송 성공
-- FAILED: 전송 실패(에러/재시도 카운트 기록)
+
 
 ```kotlin
 sealed interface RemoteResult<out T> {
@@ -111,49 +133,43 @@ sealed interface RemoteResult<out T> {
 }
 ```
 
-물류센터/현장 환경에서의 다양한 네트워크 상태를 처리하기 위해 고안했습니다.
 
-Success(성공), HttpError(서버에러), Offline(네트워크 끊김), Unknown(기타)를 정의하여 ViewModel에서 사용자에게 작업의 결과를 보여줍니다.
-
-JobViewmodel.kt
+LocalRepositoryImpl.kt (일부)
 
 ```kotlin
-when (remoteResult) {
-    is RemoteResult.Success -> {
-        _uiResult.value = UiResult.Idle
-    }
-    is RemoteResult.HttpError -> {
-        _uiResult.value = UiResult.Fail(remoteResult.body ?: "알 수 없는 이유로 실패하였습니다.")
-    }
-    is RemoteResult.Offline -> {
-        _uiResult.value = UiResult.Fail("네트워크를 확인해주세요.")
-    }
-    is RemoteResult.Unknown -> {
-        _uiResult.value = UiResult.Fail(remoteResult.t.message ?: "알 수 없는 이유로 실패하였습니다.")
-    }
-}
-```
+private val downloadedTrackFlow = downloadDataSource.observerTracks().map { list ->
+        list.associateBy { it.id }
+    }.stateIn(applicationScope, WhileSubscribed(5000), emptyMap())
 
-Screen
-
-```kotlin
-LaunchedEffect(uiResult) {
-    when (uiResult) {
-        is UiResult.Fail -> {
-          Log.i(JobViewModel.TAG, "Fail: ${(uiResult as UiResult.Fail).msg}")
-          Toast.makeText(appContext, "실패했습니다.", Toast.LENGTH_SHORT).show()
+    private val cachedTrackRawFlow = combine(downloadedTrackFlow,localCacheDataSource.observerTracks() ) { down, raw ->
+        Log.d(TAG, "observeAlbums: ${down.toList().joinToString { it.first }}")
+        raw.associate {
+            it.id to it.toTrack(down.containsKey(it.id))
+        }.also {
+            Log.d(TAG, "observeAlbums: ${it.toList().joinToString { "${it.second.title}: ${it.second.downloaded}" }}")
         }
-        else -> {  }
-    }
-}
+    }.stateIn(applicationScope, WhileSubscribed(5000), emptyMap())
+
+    private val cachedAlbumRawFlow = combine(localCacheDataSource.observeAlbums(), cachedTrackRawFlow) { albumRaws, trackMap ->
+        albumRaws.map { raw ->
+            val tracksForAlbum = raw.tracksId.mapNotNull { trackMap[it] }
+            raw.toAlbum(tracks = tracksForAlbum)
+        }
+    }.stateIn(applicationScope, WhileSubscribed(5000), emptyList())
 ```
+
+- 이 프로젝트에서 다운로드 상태(downloadDataSource) 와 앨범/트랙 메타(localCacheDataSource) 가 서로 다른 소스에 있어서, 화면마다 따로 조합하면 정합성 깨짐/로직 중복/깜빡임이 생길 수 있었습니다.
+
+- 그래서 LocalRepository를 @Singleton으로 DI하고, 여기서만 combine으로 두 소스를 합쳐 Track(downloaded) / Album(tracks) 최종 모델을 단일 Flow(SSOT) 로 만든다.
+
+- stateIn로 결과를 캐싱해서 StateFlow로 전환하여, 앱 전체에서 동일한 스트림을 공유하고 중복 연산/중복 구독을 줄였다.
 
 
 
 ------
 
 #### Notes
->본 프로젝트는 “바코드 → 실제 물류 도메인 매핑(상품 조회, 주문 조회 등)”을 포함하지 않습니다.
-이는 WMS/OMS 조회 및 프로세스 규칙이 필요한 별도 도메인 영역이며, 본 프로토타입은 오프라인 큐잉/동기화/정합성 흐름 검증에 집중했습니다.
+> 본 프로젝트는 실제 앨범 도메인을 단순화한 프로토타입입니다.
+목표는 “등록 → 탐색 → 재생 → 다운로드 → 오프라인 재생”의 사용자 플로우와 상태 전이를 명확하게 보여주는 것입니다.
 
 
