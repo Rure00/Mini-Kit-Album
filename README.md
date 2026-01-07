@@ -141,21 +141,18 @@ private val downloadedTrackFlow = downloadDataSource.observerTracks().map { list
         list.associateBy { it.id }
     }.stateIn(applicationScope, WhileSubscribed(5000), emptyMap())
 
-    private val cachedTrackRawFlow = combine(downloadedTrackFlow,localCacheDataSource.observerTracks() ) { down, raw ->
-        Log.d(TAG, "observeAlbums: ${down.toList().joinToString { it.first }}")
-        raw.associate {
-            it.id to it.toTrack(down.containsKey(it.id))
-        }.also {
-            Log.d(TAG, "observeAlbums: ${it.toList().joinToString { "${it.second.title}: ${it.second.downloaded}" }}")
-        }
-    }.stateIn(applicationScope, WhileSubscribed(5000), emptyMap())
+private val cachedTrackRawFlow = combine(downloadedTrackFlow,localCacheDataSource.observerTracks() ) { down, raw ->
+    raw.associate {
+        it.id to it.toTrack(down.containsKey(it.id))
+    }
+}.stateIn(applicationScope, WhileSubscribed(5000), emptyMap())
 
-    private val cachedAlbumRawFlow = combine(localCacheDataSource.observeAlbums(), cachedTrackRawFlow) { albumRaws, trackMap ->
-        albumRaws.map { raw ->
-            val tracksForAlbum = raw.tracksId.mapNotNull { trackMap[it] }
-            raw.toAlbum(tracks = tracksForAlbum)
-        }
-    }.stateIn(applicationScope, WhileSubscribed(5000), emptyList())
+private val cachedAlbumRawFlow = combine(localCacheDataSource.observeAlbums(), cachedTrackRawFlow) { albumRaws, trackMap ->
+    albumRaws.map { raw ->
+        val tracksForAlbum = raw.tracksId.mapNotNull { trackMap[it] }
+        raw.toAlbum(tracks = tracksForAlbum)
+    }
+}.stateIn(applicationScope, WhileSubscribed(5000), emptyList())
 ```
 
 - 이 프로젝트에서 다운로드 상태(downloadDataSource) 와 앨범/트랙 메타(localCacheDataSource) 가 서로 다른 소스에 있어서, 화면마다 따로 조합하면 정합성 깨짐/로직 중복/깜빡임이 생길 수 있었습니다.
